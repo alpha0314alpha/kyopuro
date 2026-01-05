@@ -1,3 +1,5 @@
+#include <vector>
+
 template<class T> class segtree{
 private:
     int n;
