@@ -1,3 +1,5 @@
+#include <vector>
+
 class dsu{
 private:
     vector<int> parent;
