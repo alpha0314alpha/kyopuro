@@ -1,6 +1,6 @@
 #include <vector>
 
-template<class T> class lazy_segtree {
+template<class T> class lazy_segtree{
 private:
     int n;
     vector<T> seg, lazy;
