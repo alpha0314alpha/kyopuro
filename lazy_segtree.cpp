@@ -1,4 +1,5 @@
 #include <vector>
+#include <functional>
 
 template<class T> class lazy_segtree{
 private:
