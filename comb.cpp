@@ -1,3 +1,17 @@
+#include <vector>
+using ll = long long;
+
+ll modpow(ll a, ll e, ll mod = MOD){
+    if (e == 0) return 1;
+    ll res = 1;
+    while (e){
+        if (e&1) res = res*a%mod;
+        a = a*a%mod;
+        e >>= 1;
+    }
+    return res;
+}
+
 class comb{
 private:
     vector<ll> fact, invfact;
