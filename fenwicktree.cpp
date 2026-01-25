@@ -1,23 +1,30 @@
+#include <vector>
+
 template<typename T> class fenwicktree{
 private:
     int n;
-    vector<T> bit;
+    vector<T> bit, a;
 
 public:
-    fenwicktree(int n) : n(n), bit(n, T()) {}
+    fenwicktree(int n) : n(n), bit(n, T()), a(n, T()) {}
 
     void add(int i, T x){
         while(i < n){
             bit[i] += x;
-            i |= i+1;
+            i |= i + 1;
         }
+    }
+
+    void set(int i, T x){
+        add(i, x - a[i]);
+        a[i] = x;
     }
 
     T sum(int i) const{
         T res = T();
         while(i >= 0){
             res += bit[i];
-            i = (i & (i + 1)) - 1;
+            i = (i&(i+1))-1;
         }
         return res;
     }
