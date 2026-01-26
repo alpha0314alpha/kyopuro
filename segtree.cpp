@@ -8,7 +8,7 @@ private:
     T e;
     function<T(T, T)> op;
 
-    void build(int node, int l, int r, const vector<T> &A){
+    void build(int node, int l, int r, const vector<T>& A){
         if (r-l == 1){
             seg[node] = A[l];
             return;
@@ -26,6 +26,24 @@ private:
         return op(query(node*2, l, mid, ql, qr), query(node*2+1, mid, r, ql, qr));
     }
 
+    int find_first(int node, int nl, int nr, int l, T val){
+        if (nr <= l) return -1;
+        if (seg[node] < val) return -1;
+        if (nr-nl == 1) return nl;
+
+        int mid = (nl+nr)/2;
+        int res = -1;
+
+        if (l < mid){
+            res = find_first(node*2, nl, mid, l, val);
+            if (res != -1) return res;
+            return find_first(node*2+1, mid, nr, l, val);
+        }
+        else{
+            return find_first(node*2+1, mid, nr, l, val);
+        }
+    }
+
     void update(int node, int l, int r, int idx, T val){
         if (r-l == 1){
             seg[node] = val;
@@ -36,8 +54,15 @@ private:
         else update(node*2+1, mid, r, idx, val);
         seg[node] = op(seg[node*2], seg[node*2+1]);
     }
+
+    T get(int node, int l, int r, int idx) const{
+        if (r-l == 1) return seg[node];
+        int mid = (l+r)/2;
+        if (idx < mid) return get(node*2, l, mid, idx);
+        else return get(node*2+1, mid, r, idx);
+    }
 public:
-    segtree(const vector<T> &A, T id, function<T(T, T)> op) : e(id), op(op){
+    segtree(const vector<T>& A, T id, function<T(T, T)> op) : e(id), op(op){
         n = A.size();
         seg.assign(4*n, e);
         build(1, 0, n, A);
@@ -49,5 +74,17 @@ public:
 
     void update(int idx, T val){
         update(1, 0, n, idx, val);
+    }
+
+    int find_first(int l, T val){
+        return find_first(1, 0, n, l, val);
+    }
+
+    T get(int idx) const{
+        return get(1, 0, n, idx);
+    }
+
+    void add(int idx, T val){
+        update(idx, get(idx) + val);
     }
 };
