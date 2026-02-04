@@ -58,6 +58,19 @@ template<typename T> ostream& operator << (ostream& os, const vector<T>& v){
 	return os;
 }
 
+template<typename T> istream& operator >> (istream& is, deque<T>& v) {
+	for (T& x : v) is >> x;
+	return is;
+}
+
+template<typename T> ostream& operator << (ostream& os, const deque<T>& v){
+	for (int i = 0; i < v.size(); i++){
+		if (i < v.size()-1) os << v[i] << ' ';
+		else os << v[i] << '\n';
+	}
+	return os;
+}
+
 vector<pair<char, int>> to_rle(const string& S){
 	vector<pair<char, int>> res;
 	for (char i : S) {
