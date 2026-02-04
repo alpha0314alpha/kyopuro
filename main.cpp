@@ -58,19 +58,6 @@ template<typename T> ostream& operator << (ostream& os, const vector<T>& v){
 	return os;
 }
 
-template<typename T> istream& operator >> (istream& is, deque<T>& v) {
-	for (T& x : v) is >> x;
-	return is;
-}
-
-template<typename T> ostream& operator << (ostream& os, const deque<T>& v){
-	for (int i = 0; i < v.size(); i++){
-		if (i < v.size()-1) os << v[i] << ' ';
-		else os << v[i] << '\n';
-	}
-	return os;
-}
-
 vector<pair<char, int>> to_rle(const string& S){
 	vector<pair<char, int>> res;
 	for (char i : S) {
@@ -327,7 +314,7 @@ namespace graph{
     public:
         flow(int n) : N(n), G(n), level(n), it(n) {}
 
-        void addedge(int u, int v, T cap){
+        void add_edge(int u, int v, T cap){
             edge a = {v, cap, (int)G[v].size()};
             edge b = {u, 0, (int)G[u].size()};
             G[u].push_back(a);
@@ -744,7 +731,6 @@ namespace num{
 		modint inv() const{
 			return pow(mod-2);
 		}
-
 		modint operator / (const modint& other) const{
 			return *this*other.inv();
 		}
@@ -862,12 +848,6 @@ template<typename T> using segtree = tree::segtree<T>;
 
 #if 1
 signed main(){
-    ios::sync_with_stdio(false);
-    cin.tie(nullptr);
-    // cin >> testcases;
-
-    while (testcases--){
-    }
 }
 #else
 signed main(){
