@@ -1,4 +1,7 @@
 #include <bits/stdc++.h>
+#define MOD 1000000007ll
+// #define MOD 998244353ll
+#define ROOT (MOD == 998244353ll? 3ll: 5ll)
 #define INF (1ll<<60)
 #define EPS 1e-14
 #define lb lower_bound
@@ -10,7 +13,7 @@
 #define maxe max_element
 #define mine min_element
 #define accu accumulate
-#define popc __builtin_popcount
+#define popcount __builtin_popcount
 #define elif else if 
 #define nall(A) A.begin(), A.end()
 #define rall(A) A.rbegin(), A.rend()
@@ -22,6 +25,7 @@
 #define no cout<<"No"<<endl
 #define yesno(a) cout<<(a?"Yes":"No")<<endl
 #define sanko(a, b, c) (a? b: c)
+#define ci cin
 using namespace std;
 using cd = complex<long double>;
 using ll = long long;
@@ -36,14 +40,24 @@ const int dx[] = {1, 0, -1, 0};
 const int dy[] = {0, -1, 0, 1};
 const int dx8[] = { 1, 1, 0, -1, -1, -1, 0, 1 };
 const int dy8[] = { 0, -1, -1, -1, 0, 1, 1, 1 };
-const long long MOD = 1000000007ll;
-// const long long MOD = 998244353ll;
-const long long ROOT = (MOD == 998244353ll? 3ll: 5ll);
 const long double PI = acosl(-1);
 const string abcdefghijklmnopqrstuvwxyz = "abcdefghijklmnopqrstuvwxyz";
 const string ABCDEFGHIJKLMNOPQRSTUVWXYZ = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 template<typename T> bool chmin(T& a, T b) { if (a > b) { a = b; return true; } return false; }
 template<typename T> bool chmax(T& a, T b) { if (a < b) { a = b; return true; } return false; }
+
+template<typename T> istream& operator >> (istream& is, deque<T>& v) {
+	for (T& x : v) is >> x;
+	return is;
+}
+
+template<typename T> ostream& operator << (ostream& os, const deque<T>& v){
+	for (int i = 0; i < v.size(); i++){
+		if (i < v.size()-1) os << v[i] << ' ';
+		else os << v[i] << '\n';
+	}
+	return os;
+}
 
 template<typename T> istream& operator >> (istream& is, vector<T>& v) {
 	for (T& x : v) is >> x;
@@ -56,6 +70,21 @@ template<typename T> ostream& operator << (ostream& os, const vector<T>& v){
 		else os << v[i] << '\n';
 	}
 	return os;
+}
+
+template<typename T, typename U> istream& operator >> (istream& is, pair<T, U>& p){
+    is >> p.first >> p.second;
+    return is;
+}
+
+template<typename T, typename U> istream& operator >> (istream& is, vector<pair<T, U>>& p){
+    for (auto& i : p) cin >> i.first >> i.second;
+    return is;
+}
+
+template<typename T, typename U> istream& operator >> (istream& is, deque<pair<T, U>>& p){
+    for (auto& i : p) cin >> i.first >> i.second;
+    return is;
 }
 
 vector<pair<char, int>> to_rle(const string& S){
@@ -76,6 +105,18 @@ template<typename T> vector<pair<T, int>> to_rle(const vector<T>& A){
 	return res;
 }
 
+vector<int> zaatu(const string& A){
+	int N = (int)A.size();
+	string B = A;
+	sort(B.begin(), B.end());
+	B.erase(unique(B.begin(), B.end()), B.end());
+	vector<int> res(N);
+	for (int i = 0; i < N; i++){
+		res[i] = lower_bound(B.begin(), B.end(), A[i])-B.begin();
+	}
+	return res;
+}
+
 template<typename T> vector<int> zaatu(const vector<T>& A){
 	int N = (int)A.size();
 	vector<T> B = A;
@@ -85,7 +126,6 @@ template<typename T> vector<int> zaatu(const vector<T>& A){
 	for (int i = 0; i < N; i++){
 		res[i] = lower_bound(B.begin(), B.end(), A[i])-B.begin();
 	}
-
 	return res;
 }
 
@@ -289,6 +329,7 @@ namespace graph{
 		}
 
 		int build(){
+            noword = 0, compcount = 0;
 			ord.assign(N, -1);
 			low.resize(N);
 			comp.resize(N);
@@ -392,6 +433,10 @@ namespace tree{
 			a[i] = x;
 		}
 
+        T get(int i) const{
+            return a[i];
+        }
+
 		T sum(int i) const{
 			T res = T();
 			while(i >= 0){
@@ -450,6 +495,24 @@ namespace tree{
 			}
 		}
 
+        int find_last(int node, int nl, int nr, int r, T val){
+            if (r <= nl) return -1;
+            if (seg[node] <= val) return -1;
+            if (nr - nl == 1) return nl;
+
+            int mid = (nl + nr) / 2;
+            int res = find_last(node*2+1, mid, nr, r, val);
+            if (res != -1) return res;
+            return find_last(node*2, nl, mid, r, val);
+        }
+
+        int find_th(int node, int l, int r, int k){
+            if(r-l == 1) return l;
+            int mid = (l+r)/2;
+            if (seg[node*2] >= k) return find_th(node*2, l, mid, k);
+            else return find_th(node*2+1, mid, r, k-seg[node*2]);
+        }
+
 		void update(int node, int l, int r, int idx, T val){
 			if (r-l == 1){
 				seg[node] = val;
@@ -474,101 +537,145 @@ namespace tree{
 			build(1, 0, n, A);
 		}
 
-		T query(int l, int r) const{
-			return query(1, 0, n, l, r);
-		}
-
-		void update(int idx, T val){
-			update(1, 0, n, idx, val);
-		}
-
-		int find_first(int l, T val){
-			return find_first(1, 0, n, l, val);
-		}
-
-		T get(int idx) const{
-			return get(1, 0, n, idx);
-		}
-
-		void add(int idx, T val){
-			update(idx, get(idx) + val);
-		}
+		T query(int l, int r) const{ return query(1, 0, n, l, r); }
+		void update(int idx, T val){ update(1, 0, n, idx, val); }
+		int find_first(int l, T val){ return find_first(1, 0, n, l, val); }
+		int find_last(int l, T val){ return find_last(1, 0, n, l, val); }
+        int find_th(int k){ if(seg[1] < k) return -1; return find_th(1, 0, n, k); }
+		T get(int idx) const{ return get(1, 0, n, idx); }
+		void add(int idx, T val){ update(idx, get(idx) + val); }
 	};
 
-	template<class T> class lazy_segtree {
-	private:
-		int n;
-		vector<T> seg, lazy;
-		vector<bool> flag;
-		T e;
-		function<T(T, T)> op;
+    template<class T> class lazy_segtree{
+    private:
+        int n;
+        vector<T> seg, lazy;
+        vector<bool> flag;
+        T e;
+        function<T(T,T)> op;
 
-		void build(int node, int l, int r, const vector<T>& A){
-			if (r-l == 1){
-				seg[node] = A[l];
-				return;
-			}
-			int mid = (l+r)/2;
-			build(node*2, l, mid, A);
-			build(node*2+1, mid, r, A);
-			seg[node] = op(seg[node*2], seg[node*2+1]);
-		}
+        void build(int node, int l, int r, const vector<T>& A){
+            if(r-l == 1){
+                seg[node] = A[l];
+                return;
+            }
+            int mid = (l+r)/2;
+            build(node*2, l, mid, A);
+            build(node*2+1, mid, r, A);
+            seg[node] = op(seg[node*2], seg[node*2+1]);
+        }
 
-		void push(int node, int l, int r){
-			if (!flag[node]) return;
-			int mid = (l+r)/2;
-			apply(node*2, l, mid, lazy[node]);
-			apply(node*2+1, mid, r, lazy[node]);
-			flag[node] = false;
-		}
+        void push(int node, int l, int r){
+            if(!flag[node]) return;
+            int mid = (l+r)/2;
+            apply(node*2, l, mid, lazy[node]);
+            apply(node*2+1, mid, r, lazy[node]);
+            flag[node] = false;
+        }
 
-		void apply(int node, int l, int r, T val){
-			seg[node] = val*(r-l);
-			lazy[node] = val;
-			flag[node] = true;
-		}
+        void apply(int node, int l, int r, T val){
+            seg[node] = val * (r-l);
+            lazy[node] = val;
+            flag[node] = true;
+        }
 
-		void update(int node, int l, int r, int ql, int qr, T val){
-			if (qr <= l || r <= ql) return;
-			if (ql <= l && r <= qr){
-				apply(node, l, r, val);
-				return;
-			}
-			push(node, l, r);
-			int mid = (l+r)/2;
-			update(node*2, l, mid, ql, qr, val);
-			update(node*2+1, mid, r, ql, qr, val);
-			seg[node] = op(seg[node*2], seg[node*2+1]);
-		}
+        void update(int node, int l, int r, int ql, int qr, T val){
+            if(qr <= l || r <= ql) return;
+            if(ql <= l && r <= qr){
+                apply(node, l, r, val);
+                return;
+            }
+            push(node, l, r);
+            int mid = (l+r)/2;
+            update(node*2, l, mid, ql, qr, val);
+            update(node*2+1, mid, r, ql, qr, val);
+            seg[node] = op(seg[node*2], seg[node*2+1]);
+        }
 
-		T query(int node, int l, int r, int ql, int qr){
-			if (qr <= l || r <= ql) return e;
-			if (ql <= l && r <= qr) return seg[node];
-			push(node, l, r);
-			int mid = (l+r)/2;
-			return op(
-				query(node*2, l, mid, ql, qr),
-				query(node*2+1, mid, r, ql, qr)
-			);
-		}
+        T query(int node, int l, int r, int ql, int qr){
+            if(qr <= l || r <= ql) return e;
+            if(ql <= l && r <= qr) return seg[node];
+            push(node, l, r);
+            int mid = (l+r)/2;
+            return op(query(node*2, l, mid, ql, qr),
+                      query(node*2+1, mid, r, ql, qr));
+        }
 
-	public:
-		lazy_segtree(const vector<T>& A, T id, function<T(T,T)> op) : e(id), op(op){
-			n = A.size();
-			seg.assign(4*n, e);
-			lazy.assign(4*n, 0);
-			flag.assign(4*n, false);
-			build(1, 0, n, A);
-		}
+        T get(int node, int l, int r, int idx){
+            if(r-l == 1) return seg[node];
+            push(node, l, r);
+            int mid = (l+r)/2;
+            if(idx < mid) return get(node*2, l, mid, idx);
+            else return get(node*2+1, mid, r, idx);
+        }
 
-		void update(int l, int r, T val){
-			update(1, 0, n, l, r, val);
-		}
+        void add(int node, int l, int r, int idx, T val){
+            if(r-l == 1){
+                seg[node] += val;
+                return;
+            }
+            push(node, l, r);
+            int mid = (l+r)/2;
+            if(idx < mid) add(node*2, l, mid, idx, val);
+            else add(node*2+1, mid, r, idx, val);
+            seg[node] = op(seg[node*2], seg[node*2+1]);
+        }
 
-		T query(int l, int r){
-			return query(1, 0, n, l, r);
-		}
-	};
+        int find_first(int node, int nl, int nr, int l, T val){
+            if(nr <= l) return -1;
+            push(node, nl, nr);
+            if(seg[node] < val) return -1;
+            if(nr-nl == 1) return nl;
+
+            int mid = (nl+nr)/2;
+            int res = find_first(node*2, nl, mid, l, val);
+            if(res != -1) return res;
+            return find_first(node*2+1, mid, nr, l, val);
+        }
+
+        int find_last(int node, int nl, int nr, int r, T val){
+            if(r <= nl) return -1;
+            push(node, nl, nr);
+            if(seg[node] < val) return -1;
+            if(nr-nl == 1) return nl;
+
+            int mid = (nl+nr)/2;
+            int res = find_last(node*2+1, mid, nr, r, val);
+            if(res != -1) return res;
+            return find_last(node*2, nl, mid, r, val);
+        }
+
+        int find_th(int node, int l, int r, T k){
+            push(node, l, r);
+            if(seg[node] < k) return -1;
+            if(r-l == 1) return l;
+            int mid = (l+r)/2;
+            push(node*2, l, mid);
+            if(seg[node*2] >= k){
+                return find_th(node*2, l, mid, k);
+            }
+            else {
+                return find_th(node*2+1, mid, r, k - seg[node*2]);
+            }
+        }
+
+    public:
+        lazy_segtree(const vector<T>& A, T id, function<T(T,T)> op) : e(id), op(op){
+            n = A.size();
+            seg.assign(4*n, e);
+            lazy.assign(4*n, 0);
+            flag.assign(4*n, false);
+            build(1, 0, n, A);
+        }
+
+        void update(int l, int r, T val){ update(1, 0, n, l, r, val); }
+        T query(int l, int r){ return query(1, 0, n, l, r); }
+        T get(int idx){ return get(1, 0, n, idx); }
+        void add(int idx, T val){ add(1, 0, n, idx, val); }
+        int find_first(int l, T val){ return find_first(1, 0, n, l, val); }
+        int find_last(int r, T val){ return find_last(1, 0, n, r, val); }
+        int find_th(T k){ return find_th(1, 0, n, k); }
+    };
 
 	class trietree{
 	public:
@@ -618,6 +725,18 @@ namespace num{
 		}
 		return res;
 	}
+
+    vector<bool> make_isprime(int N){
+        vector<bool> isprime(N+1, true);
+        isprime[0] = false, isprime[1] = false;
+        for (int i = 2; i*i <= N; i++){
+            if (!isprime[i]) continue;
+            for (int j = i*i; j <= N; j += i){
+                isprime[j] = false;
+            }
+        }
+        return isprime;
+    }
 
 	template<typename T> map<T, int> prime_factor(T N){
 		map<T, int> res;
@@ -707,12 +826,36 @@ namespace num{
 			return *this;
 		}
 
+		modint& operator ++ (){
+			value += 1;
+			if (value >= mod) value -= mod;
+			return *this;
+		}
+
+		modint operator ++ (int){
+            modint tmp = *this;
+            ++(*this);
+            return tmp;
+		}
+
 		modint& operator -= (const modint& other){
 			value -= other.value;
 			if (value < 0) value += mod;
 			return *this;
 		}
 
+		modint operator -- (){
+			value -= 1;
+			if (value < 0) value += mod;
+			return *this;
+		}
+
+		modint& operator -- (int){
+            modint tmp = *this;
+            --(*this);
+            return tmp;
+		}
+        
 		modint& operator *= (const modint& other){
 			value = value*other.value%mod;
 			return *this;
@@ -731,6 +874,7 @@ namespace num{
 		modint inv() const{
 			return pow(mod-2);
 		}
+
 		modint operator / (const modint& other) const{
 			return *this*other.inv();
 		}
@@ -833,7 +977,118 @@ namespace num{
 		fa.resize(need);
 		return fa;
 	}
+
+    ull floor_sum_unsigned(ull n, ull m, ull a, ull b) {
+        ull ans = 0;
+        while (true){
+            if (a >= m){ ans += n*(n-1)/2*(a/m); a %= m; }
+            if (b >= m){ ans += n*(b/m); b %= m; }
+            ull y_max = a*n+b;
+            if (y_max < m) break;
+            n = (ull)(y_max/m);
+            b = (ull)(y_max%m);
+            swap(m, a);
+        }
+        return ans;
+    }
+
+    ll safe_mod(ll x, ll m) {
+        x %= m;
+        if (x < 0) x += m;
+        return x;
+    }
+
+    ll floor_sum(ll n, ll m, ll a, ll b) {
+        assert(0 <= n && n < (1LL << 32));
+        assert(1 <= m && m < (1LL << 32));
+        ull ans = 0;
+        if (a < 0){
+            ull a2 = safe_mod(a, m);
+            ans -= 1ULL*n*(n-1)/2*((a2-a)/m);
+            a = a2;
+        }
+        if (b < 0){
+            ull b2 = safe_mod(b, m);
+            ans -= 1ULL*n*((b2-b)/m);
+            b = b2;
+        }
+        return ans+floor_sum_unsigned(n, m, a, b);
+    }
 }
+
+#if MOD == 998244353ll
+namespace fps{
+    using mint = num::modint<998244353>;
+    using F = vector<mint>;
+
+    F multiply(const F& a, const F& b, int N){
+        auto r = num::multiply_ntt<MOD, ROOT>(a, b);
+        r.resize(N);
+        return r;
+    }
+
+    F diff(const F& f){
+        int n = f.size();
+        F g(max(0, n-1));
+        for (int i = 1; i < n; i++) g[i-1] = f[i]*i;
+        return g;
+    }
+
+    F integral(const F& f){
+        int n = f.size();
+        F g(n+1);
+        for (int i = 0; i < n; i++) g[i+1] = f[i]/(i+1);
+        return g;
+    }
+
+    F inv(const F& f, int N){
+        F g(1);
+        g[0] = f[0].inv();
+        for (int n = 1; n < N; n <<= 1){
+            F f_cut(min((int)f.size(), 2*n));
+            for (int i = 0; i < f_cut.size(); i++) f_cut[i] = f[i];
+            auto gg = multiply(g, g, 2*n);
+            auto fg = multiply(f_cut, gg, 2*n);
+            g.resize(2*n);
+            for (int i = 0; i < 2*n; i++) g[i] = g[i]*2-fg[i];
+        }
+        g.resize(N);
+        return g;
+    }
+
+    F log(const F& f, int N){
+        auto df = diff(f);
+        auto invf = inv(f, N);
+        auto res = multiply(df, invf, N-1);
+        return integral(res);
+    }
+
+    F exp(const F& f, int N){
+        F g(1);
+        g[0] = 1;
+        for (int n = 1; n < N; n <<= 1){
+            auto lg = log(g, 2*n);
+            F diff_f(2*n);
+            for (int i = 0; i < min((int)f.size(), 2*n); i++) diff_f[i] = f[i];
+            for (int i = 0; i < 2*n; i++) lg[i] = diff_f[i]-lg[i];
+            lg[0] += 1;
+            g = multiply(g, lg, 2*n);
+        }
+        g.resize(N);
+        return g;
+    }
+
+    F fastpow(F f, int D, int K){
+        F res = {1};
+        while (D){
+            if (D&1) res = multiply(res, f, K);
+            D >>= 1;
+            if (D) f = multiply(f, f, K);
+        }
+        return res;
+    }
+}
+#endif
 
 #ifndef ONLINE_JUDGE
 signed testcases = 10;
@@ -845,9 +1100,15 @@ using mint = num::modint<MOD>;
 using num::modpow;
 template<typename T> using fenwicktree = tree::fenwicktree<T>;
 template<typename T> using segtree = tree::segtree<T>;
+template<typename T> using lazy_segtree = tree::lazy_segtree<T>;
 
 #if 1
 signed main(){
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    // cin >> testcases;
+    while (testcases--){
+    }
 }
 #else
 signed main(){
