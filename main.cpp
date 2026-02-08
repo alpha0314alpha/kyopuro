@@ -1,6 +1,6 @@
 #include <bits/stdc++.h>
-#define MOD 1000000007ll
-// #define MOD 998244353ll
+// #define MOD 1000000007ll
+#define MOD 998244353ll
 #define ROOT (MOD == 998244353ll? 3ll: 5ll)
 #define INF (1ll<<60)
 #define EPS 1e-14
@@ -26,16 +26,20 @@
 #define yesno(a) cout<<(a?"Yes":"No")<<endl
 #define sanko(a, b, c) (a? b: c)
 #define ci cin
+#define tostr to_string
+#define func function
 using namespace std;
 using cd = complex<long double>;
 using ll = long long;
 using ull = unsigned long long;
 using ld = long double;
-using pii = pair<int, int>;
+#define pii pair<int, int>;
 template<typename T> using pq = priority_queue<T>;
 template<typename T> using pqg = priority_queue<T, vector<T>, greater<T>>;
 template<typename T> using vv = vector<vector<T>>;
-template<typename T> using vvv = vector<vector<vector<T>>>;
+template<typename T> using vvv = vector<vv<T>>;
+template<typename T> using vvvv = vector<vvv<T>>;
+template<typename T> using vvvvv = vector<vvvv<T>>;
 const int dx[] = {1, 0, -1, 0};
 const int dy[] = {0, -1, 0, 1};
 const int dx8[] = { 1, 1, 0, -1, -1, -1, 0, 1 };
@@ -45,6 +49,18 @@ const string abcdefghijklmnopqrstuvwxyz = "abcdefghijklmnopqrstuvwxyz";
 const string ABCDEFGHIJKLMNOPQRSTUVWXYZ = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 template<typename T> bool chmin(T& a, T b) { if (a > b) { a = b; return true; } return false; }
 template<typename T> bool chmax(T& a, T b) { if (a < b) { a = b; return true; } return false; }
+
+// push_back
+// push_front
+// pop_back
+// pop_front
+// push
+// pop
+// emplace
+// emplae_back
+// clear
+// assign
+// resize
 
 template<typename T> istream& operator >> (istream& is, deque<T>& v) {
 	for (T& x : v) is >> x;
@@ -103,6 +119,17 @@ template<typename T> vector<pair<T, int>> to_rle(const vector<T>& A){
 		else res.back().second++;
 	}
 	return res;
+}
+
+string to_base2(long long N){
+    string res;
+    while (N > 0){
+        if (N%2 > 0) res += '1';
+        else res += '0';
+        N /= 2;
+    }
+    reverse(res.begin(), res.end());
+    return res;
 }
 
 vector<int> zaatu(const string& A){
@@ -753,7 +780,7 @@ namespace num{
 	template<typename T> T nc2(T n){
 		return n*(n-1)/2;
 	}
-	
+
 	class comb{
 	private:
 		vector<ll> fact, invfact;
@@ -917,8 +944,7 @@ namespace num{
 		return modint<mod>(a)/b;
 	}
 
-	template<ll mod, ll g>
-	void ntt(vector<num::modint<mod>> & a, bool invert) {
+	template<ll mod, ll g> void ntt(vector<num::modint<mod>> & a, bool invert) {
 		int n = a.size();
 		static vector<int> rev;
 		static vector<num::modint<mod>> roots{ {0}, {1} };
@@ -1014,6 +1040,13 @@ namespace num{
         }
         return ans+floor_sum_unsigned(n, m, a, b);
     }
+
+    ull floor_sqrt(ull n){
+        ull x = sqrtl((ld)n);
+        while ((x+1)*(x+1) <= n) x++;
+        while (x*x > n) x--;
+        return x;
+    }
 }
 
 #if MOD == 998244353ll
@@ -1103,12 +1136,26 @@ template<typename T> using segtree = tree::segtree<T>;
 template<typename T> using lazy_segtree = tree::lazy_segtree<T>;
 
 #if 1
+void solve(){
+    int N, K;
+    cin >> N >> K;
+    map<string, int> mp;
+    rep(i, N){
+        string s;
+        cin >> s;
+        mp[s]++;
+    }
+
+    vector<pair<int, string>> A;
+    each(i, mp) A.emplace_back(i.second, i.first);
+}
+
 signed main(){
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
     // cin >> testcases;
-    while (testcases--){
-    }
+    while (testcases--) solve();
+    return 0;
 }
 #else
 signed main(){
