@@ -48,25 +48,25 @@ const long double PI = acosl(-1);
 const string abcdefghijklmnopqrstuvwxyz = "abcdefghijklmnopqrstuvwxyz";
 const string ABCDEFGHIJKLMNOPQRSTUVWXYZ = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const ll tens[19] = {
-    1,
-    10,
-    100,
-    1000,
-    10000,
-    100000,
-    1000000,
-    10000000,
-    100000000,
-    1000000000,
-    10000000000,
-    100000000000,
-    1000000000000,
-    10000000000000,
-    100000000000000,
-    1000000000000000,
-    10000000000000000,
-    100000000000000000,
-    1000000000000000000,
+    1ll,
+    10ll,
+    100ll,
+    1000ll,
+    10000ll,
+    100000ll,
+    1000000ll,
+    10000000ll,
+    100000000ll,
+    1000000000ll,
+    10000000000ll,
+    100000000000ll,
+    1000000000000ll,
+    10000000000000ll,
+    100000000000000ll,
+    1000000000000000ll,
+    10000000000000000ll,
+    100000000000000000ll,
+    1000000000000000000ll,
 };
 template<typename T> bool chmin(T& a, T b){
     if (a > b){
@@ -1211,4 +1211,5 @@ signed main(){
 }
 
 void solve(){
+
 }
