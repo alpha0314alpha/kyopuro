@@ -1,6 +1,6 @@
 #include <bits/stdc++.h>
-// #define MOD 1000000007ll
-#define MOD 998244353ll
+#define MOD 1000000007ll
+// #define MOD 998244353ll
 #define ROOT (MOD == 998244353ll? 3ll: 5ll)
 #define INF (1ll<<60)
 #define EPS 1e-14
@@ -47,8 +47,41 @@ const int dy8[] = { 0, -1, -1, -1, 0, 1, 1, 1 };
 const long double PI = acosl(-1);
 const string abcdefghijklmnopqrstuvwxyz = "abcdefghijklmnopqrstuvwxyz";
 const string ABCDEFGHIJKLMNOPQRSTUVWXYZ = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-template<typename T> bool chmin(T& a, T b) { if (a > b) { a = b; return true; } return false; }
-template<typename T> bool chmax(T& a, T b) { if (a < b) { a = b; return true; } return false; }
+const ll tens[19] = {
+    1,
+    10,
+    100,
+    1000,
+    10000,
+    100000,
+    1000000,
+    10000000,
+    100000000,
+    1000000000,
+    10000000000,
+    100000000000,
+    1000000000000,
+    10000000000000,
+    100000000000000,
+    1000000000000000,
+    10000000000000000,
+    100000000000000000,
+    1000000000000000000,
+};
+template<typename T> bool chmin(T& a, T b){
+    if (a > b){
+        a = b;
+        return true;
+    }
+    return false;
+}
+template<typename T> bool chmax(T& a, T b){
+    if (a < b){
+        a = b;
+        return true;
+    }
+    return false;
+}
 
 // push_back
 // push_front
@@ -57,10 +90,11 @@ template<typename T> bool chmax(T& a, T b) { if (a < b) { a = b; return true; } 
 // push
 // pop
 // emplace
-// emplae_back
+// emplace_back
 // clear
 // assign
 // resize
+// insert
 
 template<typename T> istream& operator >> (istream& is, deque<T>& v) {
 	for (T& x : v) is >> x;
@@ -506,7 +540,7 @@ namespace tree{
 
 		int find_first(int node, int nl, int nr, int l, T val){
 			if (nr <= l) return -1;
-			if (seg[node] < val) return -1;
+			if (seg[node] > val) return -1;
 			if (nr-nl == 1) return nl;
 
 			int mid = (nl+nr)/2;
@@ -704,41 +738,66 @@ namespace tree{
         int find_th(T k){ return find_th(1, 0, n, k); }
     };
 
-	class trietree{
-	public:
-		static const int ALPHA = 26;
-		static const int MAXN = 1000000;
-		int next[MAXN][ALPHA];
-		bool is_end[MAXN];
-		int node_count;
+class trietree {
+public:
+    static constexpr int SIGMA = 256;
+    vector<array<int, SIGMA>> nxt;
+    vector<bool> is_end;
+    vector<int> cnt;
 
-		trietree(){
-			memset(next, -1, sizeof(next));
-			memset(is_end, false, sizeof(is_end));
-			node_count = 1;
-		}
+    trietree() {
+        nxt.emplace_back();
+        nxt[0].fill(-1);
+        is_end.push_back(false);
+        cnt.push_back(0);
+    }
 
-		void insert(const string& s){
-			int node = 0;
-			for(char c : s){
-				int idx = c-'a';
-				if(next[node][idx] == -1)
-					next[node][idx] = node_count++;
-				node = next[node][idx];
-			}
-			is_end[node] = true;
-		}
+    void insert(const string& s) {
+        int v = 0;
+        for (unsigned char c : s) {
+            if (nxt[v][c] == -1) {
+                nxt[v][c] = nxt.size();
+                nxt.emplace_back();
+                nxt.back().fill(-1);
+                is_end.push_back(false);
+                cnt.push_back(0);
+            }
+            v = nxt[v][c];
+            cnt[v]++;
+        }
+        is_end[v] = true;
+    }
 
-		bool search(const string& s){
-			int node = 0;
-			for(char c : s){
-				int idx = c-'a';
-				if(next[node][idx] == -1) return false;
-				node = next[node][idx];
-			}
-			return is_end[node];
-		}
-	};
+    bool search(const string& s) const{
+        int v = 0;
+        for (unsigned char c : s){
+            if (nxt[v][c] == -1) return false;
+            v = nxt[v][c];
+        }
+        return is_end[v];
+    }
+
+    bool starts_with(const string& s) const{
+        int v = 0;
+        for (unsigned char c : s){
+            if (nxt[v][c] == -1) return false;
+            v = nxt[v][c];
+        }
+        return true;
+    }
+
+    int max_lcp(const string& s) const{
+        int v = 0;
+        int depth = 0;
+        int ans = 0;
+        for (unsigned char c : s){
+            v = nxt[v][c];
+            depth++;
+            if (cnt[v] >= 2) ans = depth;
+        }
+        return ans;
+    }
+};
 }
 
 namespace num{
@@ -816,10 +875,10 @@ namespace num{
 			return fact[n]*invfact[r]%mod*invfact[n-r]%mod;
 		}
 
-		ll nhr(int n, int r){
-			if (r < 0 || r > n || n > size) return 0;
-			return ncr(n+r-1, r);
-		}
+        ll nhr(int n, int r){
+            if (n <= 0 || r < 0 || n+r-1 > size) return 0;
+            return ncr(n+r-1, r);
+        }
 	};
 
 	template<ll mod> class modint{
@@ -1047,6 +1106,11 @@ namespace num{
         while (x*x > n) x--;
         return x;
     }
+
+    bool is_square(ull n){
+        ull x = floor_sqrt(n);
+        return x*x == n;
+    }
 }
 
 #if MOD == 998244353ll
@@ -1120,7 +1184,7 @@ namespace fps{
         }
         return res;
     }
-}
+} 
 #endif
 
 #ifndef ONLINE_JUDGE
@@ -1128,36 +1192,23 @@ signed testcases = 10;
 #else
 signed testcases = 1;
 #endif
-#define int long long
+#define int long long 
 using mint = num::modint<MOD>;
 using num::modpow;
 template<typename T> using fenwicktree = tree::fenwicktree<T>;
 template<typename T> using segtree = tree::segtree<T>;
 template<typename T> using lazy_segtree = tree::lazy_segtree<T>;
 
-#if 1
-void solve(){
-    int N, K;
-    cin >> N >> K;
-    map<string, int> mp;
-    rep(i, N){
-        string s;
-        cin >> s;
-        mp[s]++;
-    }
-
-    vector<pair<int, string>> A;
-    each(i, mp) A.emplace_back(i.second, i.first);
-}
-
+void solve();
 signed main(){
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
+    cout << fixed << setprecision(20);
     // cin >> testcases;
+    // testcases = 1;
     while (testcases--) solve();
     return 0;
 }
-#else
-signed main(){
+
+void solve(){
 }
-#endif
