@@ -804,24 +804,24 @@ namespace tree{
         int find_th(T k){ return find_th(1, 0, n, k); }
     };
 
-    class trietree {
+    class trietree{
     public:
-        static constexpr int SIGMA = 256;
+        static const int SIGMA = 256;
         vector<array<int, SIGMA>> nxt;
         vector<bool> is_end;
         vector<int> cnt;
 
-        trietree() {
+        trietree(){
             nxt.emplace_back();
             nxt[0].fill(-1);
             is_end.push_back(false);
             cnt.push_back(0);
         }
 
-        void insert(const string& s) {
+        void insert(const string& s){
             int v = 0;
-            for (unsigned char c : s) {
-                if (nxt[v][c] == -1) {
+            for (unsigned char c : s){
+                if (nxt[v][c] == -1){
                     nxt[v][c] = nxt.size();
                     nxt.emplace_back();
                     nxt.back().fill(-1);
