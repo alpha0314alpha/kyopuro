@@ -15,6 +15,7 @@
 #define mine min_element
 #define accu accumulate
 #define popcount __builtin_popcount
+#define clzll __builtin_clzll
 #define elif else if 
 #define nall(A) A.begin(), A.end()
 #define rall(A) A.rbegin(), A.rend()
@@ -29,6 +30,7 @@
 #define ci cin
 #define tostr to_string
 #define func function
+#define uniqueerase(A) A.erase(unique(A.begin(), A.end()), A.end())
 using namespace std;
 using cd = complex<long double>;
 using ll = long long;
@@ -41,13 +43,14 @@ template<typename T> using vv = vector<vector<T>>;
 template<typename T> using vvv = vector<vv<T>>;
 template<typename T> using vvvv = vector<vvv<T>>;
 template<typename T> using vvvvv = vector<vvvv<T>>;
-const int dx[] = {1, 0, -1, 0};
-const int dy[] = {0, -1, 0, 1};
+const int dx[] = { 1, 0, -1, 0 };
+const int dy[] = { 0, -1, 0, 1 };
 const int dx8[] = { 1, 1, 0, -1, -1, -1, 0, 1 };
 const int dy8[] = { 0, -1, -1, -1, 0, 1, 1, 1 };
 const long double PI = acosl(-1);
 const string abcdefghijklmnopqrstuvwxyz = "abcdefghijklmnopqrstuvwxyz";
 const string ABCDEFGHIJKLMNOPQRSTUVWXYZ = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const string num0123456789 = "0123456789";
 const ll tens[19] = {
     1ll,
     10ll,
@@ -69,6 +72,7 @@ const ll tens[19] = {
     100000000000000000ll,
     1000000000000000000ll,
 };
+
 template<typename T> bool chmin(T& a, T b){
     if (a > b){
         a = b;
@@ -76,6 +80,7 @@ template<typename T> bool chmin(T& a, T b){
     }
     return false;
 }
+
 template<typename T> bool chmax(T& a, T b){
     if (a < b){
         a = b;
@@ -198,6 +203,21 @@ bool iskaibun(string s){
 }
 
 namespace graph{
+    template<typename T> vector<int> tpsort(const vector<vector<T>>& G){
+        int N = G.size();
+        vector<int> indeg(N, 0), res;
+        queue<int> Q;
+        for (int i = 0; i < N; i++) for (int j : G[i]) indeg[j]++;
+        for (int i = 0; i < N; i++) if (indeg[i] == 0) Q.push(i);
+        while (!Q.empty()){
+            int n = Q.front();
+            res.push_back(n);
+            Q.pop();
+            for (int j : G[n]) if (--indeg[j] == 0) Q.push(j);
+        }
+        return res;
+    }
+
 	class dsu{
 	private:
 		vector<int> parent;
@@ -1258,7 +1278,6 @@ signed testcases = 10;
 #else
 signed testcases = 1;
 #endif
-#define int long long 
 using mint = num::modint<MOD>;
 using num::modpow;
 template<typename T> using fenwicktree = tree::fenwicktree<T>;
@@ -1276,5 +1295,6 @@ signed main(){
     return 0;
 }
 
+#define int long long 
 void solve(){
 }
