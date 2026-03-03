@@ -1,7 +1,6 @@
 #include <bits/stdc++.h>
 #define MOD 1000000007ll
 // #define MOD 998244353ll
-#define ROOT (MOD == 998244353ll? 3ll: 5ll)
 #define INF (1ll<<60)
 #define EPS 1e-14
 #define lb lower_bound
@@ -15,6 +14,7 @@
 #define mine min_element
 #define accu accumulate
 #define popcount __builtin_popcount
+#define clzll __builtin_clzll
 #define elif else if 
 #define nall(A) A.begin(), A.end()
 #define rall(A) A.rbegin(), A.rend()
@@ -29,6 +29,7 @@
 #define ci cin
 #define tostr to_string
 #define func function
+#define uniqueerase(A) A.erase(unique(A.begin(), A.end()), A.end())
 using namespace std;
 using cd = complex<long double>;
 using ll = long long;
@@ -41,13 +42,18 @@ template<typename T> using vv = vector<vector<T>>;
 template<typename T> using vvv = vector<vv<T>>;
 template<typename T> using vvvv = vector<vvv<T>>;
 template<typename T> using vvvvv = vector<vvvv<T>>;
-const int dx[] = {1, 0, -1, 0};
-const int dy[] = {0, -1, 0, 1};
+// template<typename T> using uset = unorderd_set<T>;
+// template<typename T> using umap = unorderd_map<T>;
+template<typename T> using mset = multiset<T>;
+const ll ROOT = (MOD == 998244353ll? 3: 5);
+const int dx[] = { 1, 0, -1, 0 };
+const int dy[] = { 0, -1, 0, 1 };
 const int dx8[] = { 1, 1, 0, -1, -1, -1, 0, 1 };
 const int dy8[] = { 0, -1, -1, -1, 0, 1, 1, 1 };
 const long double PI = acosl(-1);
 const string abcdefghijklmnopqrstuvwxyz = "abcdefghijklmnopqrstuvwxyz";
 const string ABCDEFGHIJKLMNOPQRSTUVWXYZ = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const string num0123456789 = "0123456789";
 const ll tens[19] = {
     1ll,
     10ll,
@@ -69,6 +75,7 @@ const ll tens[19] = {
     100000000000000000ll,
     1000000000000000000ll,
 };
+
 template<typename T> bool chmin(T& a, T b){
     if (a > b){
         a = b;
@@ -76,6 +83,7 @@ template<typename T> bool chmin(T& a, T b){
     }
     return false;
 }
+
 template<typename T> bool chmax(T& a, T b){
     if (a < b){
         a = b;
@@ -198,6 +206,21 @@ bool iskaibun(string s){
 }
 
 namespace graph{
+    template<typename T> vector<int> tpsort(const vector<vector<T>>& G){
+        int N = G.size();
+        vector<int> indeg(N, 0), res;
+        queue<int> Q;
+        for (int i = 0; i < N; i++) for (int j : G[i]) indeg[j]++;
+        for (int i = 0; i < N; i++) if (indeg[i] == 0) Q.push(i);
+        while (!Q.empty()){
+            int n = Q.front();
+            res.push_back(n);
+            Q.pop();
+            for (int j : G[n]) if (--indeg[j] == 0) Q.push(j);
+        }
+        return res;
+    }
+
 	class dsu{
 	private:
 		vector<int> parent;
@@ -753,7 +776,6 @@ namespace tree{
             push(node, nl, nr);
             if(seg[node] < val) return -1;
             if(nr-nl == 1) return nl;
-
             int mid = (nl+nr)/2;
             int res = find_first(node*2, nl, mid, l, val);
             if(res != -1) return res;
@@ -765,7 +787,6 @@ namespace tree{
             push(node, nl, nr);
             if(seg[node] < val) return -1;
             if(nr-nl == 1) return nl;
-
             int mid = (nl+nr)/2;
             int res = find_last(node*2+1, mid, nr, r, val);
             if(res != -1) return res;
@@ -778,12 +799,8 @@ namespace tree{
             if(r-l == 1) return l;
             int mid = (l+r)/2;
             push(node*2, l, mid);
-            if(seg[node*2] >= k){
-                return find_th(node*2, l, mid, k);
-            }
-            else {
-                return find_th(node*2+1, mid, r, k - seg[node*2]);
-            }
+            if (seg[node*2] >= k) return find_th(node*2, l, mid, k);
+            else return find_th(node*2+1, mid, r, k - seg[node*2]);
         }
 
     public:
@@ -862,6 +879,97 @@ namespace tree{
                 if (cnt[v] >= 2) ans = depth;
             }
             return ans;
+        }
+    };
+
+    class waveletmatrix{
+    private:
+        int n, LOG;
+        vector<vector<int>> bit;
+        vector<int> mid;
+
+    public:
+        waveletmatrix(const vector<ll>& v, ll maxv = (1LL<<60)){
+            n = v.size();
+            LOG = 0;
+            while ((1LL<<LOG) <= maxv) LOG++;
+            bit.assign(LOG, vector<int>(n+1));
+            mid.resize(LOG);
+            vector<ll> cur = v, nxt(n);
+            for (int level = LOG-1; level >= 0; level--){
+                for (int i = 0; i < n; i++){
+                    bit[level][i+1] = bit[level][i] + ((cur[i]>>level)&1);
+                }
+                int zero = 0;
+                for (ll x: cur) if (!((x>>level)&1)) zero++;
+                mid[level] = zero;
+                int z = 0, o = zero;
+                for (ll x: cur){
+                    if ((x>>level)&1) nxt[o++] = x;
+                    else nxt[z++] = x;
+                }
+                cur.swap(nxt);
+            }
+        }
+
+        int rank(int l, int r, ll x){
+            for (int level = LOG-1; level >= 0; level--){
+                int b = (x>>level)&1;
+                int l1 = bit[level][l];
+                int r1 = bit[level][r];
+                if (b){
+                    l = mid[level] + l1;
+                    r = mid[level] + r1;
+                }
+                else{
+                    l -= l1;
+                    r -= r1;
+                }
+            }
+            return r-l;
+        }
+
+        ll kth(int l, int r, int k){
+            if(k < 0 || k >= r-l) return -1;
+            ll res = 0;
+            for (int level = LOG-1; level >= 0; level--){
+                int l1 = bit[level][l], r1 = bit[level][r];
+                int zero = (r-l)-(r1-l1);
+                if (k < zero){
+                    l -= l1;
+                    r -= r1;
+                }
+                else{
+                    res |= (1LL<<level);
+                    k -= zero;
+                    l = mid[level]+l1;
+                    r = mid[level]+r1;
+                }
+            }
+            return res;
+        }
+
+        int less_than(int l, int r, ll x){
+            int cnt = 0;
+            for (int level = LOG-1; level >= 0; level--){
+                int b = (x>>level)&1;
+                int l1 = bit[level][l];
+                int r1 = bit[level][r];
+                if (b){
+                    cnt += (r-l)-(r1-l1);
+                    l = mid[level]+l1;
+                    r = mid[level]+r1;
+                }
+                else{
+                    l -= l1;
+                    r -= r1;
+                }
+            }
+            return cnt;
+        }
+
+        int range_freq(int l, int r, ll a, ll b){
+            return less_than(l, r, b)-less_than(l, r, a);
         }
     };
 }
@@ -1179,6 +1287,54 @@ namespace num{
     }
 }
 
+namespace matrix{
+    class matrix{
+    public:
+        int n;
+        vector<vector<ll>> a;
+
+        matrix (int n, bool ident = false) : n(n), a(n, vector<ll>(n, 0)){
+            if (ident) for (int i = 0; i < n; i++) a[i][i] = 1;
+        }
+
+        vector<ll>& operator[](int i){
+            return a[i];
+        }
+
+        const vector<ll>& operator[](int i) const{
+            return a[i];
+        }
+
+        static matrix identity(int n){
+            return matrix(n, true);
+        }
+
+        matrix operator* (const matrix& o) const {
+            matrix r(n);
+            for (int i = 0; i < n; i++){
+                for(int k = 0; k < n; k++){
+                    if(a[i][k] == 0) continue;
+                    for(int j = 0; j < n; j++){
+                        r.a[i][j] = (r.a[i][j]+(__int128)a[i][k]*o.a[k][j])%MOD;
+                    }
+                }
+            }
+            return r;
+        }
+
+        matrix pow(long long p) const {
+            matrix base = *this;
+            matrix r=identity(n);
+            while(p){
+                if(p & 1) r = r*base;
+                base = base*base;
+                p >>= 1;
+            }
+            return r;
+        }
+    };
+}
+
 #if MOD == 998244353ll
 namespace fps{
     using mint = num::modint<998244353>;
@@ -1258,7 +1414,6 @@ signed testcases = 10;
 #else
 signed testcases = 1;
 #endif
-#define int long long 
 using mint = num::modint<MOD>;
 using num::modpow;
 template<typename T> using fenwicktree = tree::fenwicktree<T>;
@@ -1276,5 +1431,6 @@ signed main(){
     return 0;
 }
 
+#define int long long 
 void solve(){
 }
