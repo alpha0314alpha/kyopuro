@@ -1,6 +1,6 @@
 #include <bits/stdc++.h>
-#define MOD 1000000007ll
-// #define MOD 998244353ll
+// #define MOD 1000000007ll
+#define MOD 998244353ll
 #define INF (1ll<<60)
 #define EPS 1e-14
 #define lb lower_bound
@@ -76,34 +76,13 @@ const ll tens[19] = {
     1000000000000000000ll,
 };
 
-template<typename T> bool chmin(T& a, T b){
-    if (a > b){
-        a = b;
-        return true;
-    }
-    return false;
+template<typename T> void chmin(T& x, T y){
+    x = min(x, y);
 }
 
-template<typename T> bool chmax(T& a, T b){
-    if (a < b){
-        a = b;
-        return true;
-    }
-    return false;
+template<typename T> void chmax(T& x, T y){
+    x = max(x, y);
 }
-
-// push_back
-// push_front
-// pop_back
-// pop_front
-// push
-// pop
-// emplace
-// emplace_back
-// clear
-// assign
-// resize
-// insert
 
 template<typename T> istream& operator >> (istream& is, deque<T>& v) {
 	for (T& x : v) is >> x;
@@ -1288,51 +1267,114 @@ namespace num{
 }
 
 namespace matrix{
-    class matrix{
+    template<typename T> class matrix{
+    private:
+        using mat = vector<vector<T>>;
+        int sz;
+        mat A;
     public:
-        int n;
-        vector<vector<ll>> a;
+        explicit matrix(int sz, T val = T()) : sz(sz), A(sz, vector<T>(sz, val)) {}
 
-        matrix (int n, bool ident = false) : n(n), a(n, vector<ll>(n, 0)){
-            if (ident) for (int i = 0; i < n; i++) a[i][i] = 1;
+        vector<T>& operator [] (int i){
+            return A[i];
         }
 
-        vector<ll>& operator[](int i){
-            return a[i];
+        const vector<T>& operator[] (int i) const{
+            return A[i];
         }
 
-        const vector<ll>& operator[](int i) const{
-            return a[i];
+        int size() const{
+            return sz;
         }
 
         static matrix identity(int n){
-            return matrix(n, true);
+            matrix I(n);
+            for (int i = 0; i < n; i++) I[i][i] = T(1);
+            return I;
         }
 
-        matrix operator* (const matrix& o) const {
-            matrix r(n);
-            for (int i = 0; i < n; i++){
-                for(int k = 0; k < n; k++){
-                    if(a[i][k] == 0) continue;
-                    for(int j = 0; j < n; j++){
-                        r.a[i][j] = (r.a[i][j]+(__int128)a[i][k]*o.a[k][j])%MOD;
+        matrix operator + (const matrix& B) const{
+            assert(sz == B.sz);
+            matrix C(sz);
+            for (int i = 0; i < sz; i++){
+                for (int j = 0; j < sz; j++){
+                    C[i][j] = A[i][j]+B[i][j];
+                }
+            }
+            return C;
+        }
+
+        matrix& operator += (const matrix& B){
+            assert(sz == B.sz);
+            for (int i = 0; i < sz; i++){
+                for (int j = 0; j < sz; j++){
+                    A[i][j] += B[i][j];
+                }
+            }
+            return *this;
+        }
+
+        matrix operator - (const matrix& B) const{
+            assert(sz == B.sz);
+            matrix C(sz);
+            for (int i = 0; i < sz; i++){
+                for (int j = 0; j < sz; j++){
+                    C[i][j] = A[i][j]-B[i][j];
+                }
+            }
+            return C;
+        }
+
+        matrix& operator -= (const matrix& B){
+            assert(sz == B.sz);
+            for (int i = 0; i < sz; i++){
+                for (int j = 0; j < sz; j++){
+                    A[i][j] -= B[i][j];
+                }
+            }
+            return *this;
+        }
+
+        matrix operator * (const matrix& B) const{
+            assert(sz == B.sz);
+            matrix C(sz, T());
+            for (int i = 0; i < sz; i++){
+                for (int k = 0; k < sz; k++){
+                    if (A[i][k] == T()) continue;
+                    for (int j = 0; j < sz; j++){
+                        C[i][j] += A[i][k]*B[k][j];
                     }
                 }
             }
-            return r;
+            return C;
         }
 
-        matrix pow(long long p) const {
+        matrix& operator *= (const matrix& B){
+            assert(sz == B.sz);
+            *this = (*this) *B;
+            return *this;
+        }
+
+        matrix pow(long long n) const{
             matrix base = *this;
-            matrix r=identity(n);
-            while(p){
-                if(p & 1) r = r*base;
-                base = base*base;
-                p >>= 1;
+            matrix R = identity(sz);
+            while (n > 0){
+                if (n&1) R *= base;
+                base *= base;
+                n >>= 1;
             }
-            return r;
+            return R;
         }
     };
+}
+
+template<typename T> istream& operator >> (istream& is, matrix<T>& M){
+    for(int i = 0; i < M.size(); i++){
+        for(int j = 0; j < M.size(); j++){
+            is >> M[i][j];
+        }
+    }
+    return is;
 }
 
 #if MOD == 998244353ll
@@ -1433,4 +1475,5 @@ signed main(){
 
 #define int long long 
 void solve(){
+    
 }

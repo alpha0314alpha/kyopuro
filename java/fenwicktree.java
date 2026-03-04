@@ -1,5 +1,3 @@
-import java.util.*;
-
 class Fenwicktree{
     private int n;
     private long[] bit;
