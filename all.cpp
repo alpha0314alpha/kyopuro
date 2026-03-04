@@ -1475,5 +1475,4 @@ signed main(){
 
 #define int long long 
 void solve(){
-    
 }
