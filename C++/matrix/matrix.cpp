@@ -24,6 +24,15 @@ public:
         return I;
     }
 
+    friend istream& operator >> (istream& is, matrix& M){
+        for(int i = 0; i < M.size(); i++){
+            for(int j = 0; j < M.size(); j++){
+                is >> M[i][j];
+            }
+        }
+        return is;
+    }
+
     matrix operator + (const matrix& B) const{
         assert(sz == B.sz);
         matrix C(sz);
@@ -97,12 +106,3 @@ public:
         return R;
     }
 };
-
-template<typename T> istream& operator >> (istream& is, matrix<T>& M){
-    for(int i = 0; i < M.size(); i++){
-        for(int j = 0; j < M.size(); j++){
-            is >> M[i][j];
-        }
-    }
-    return is;
-}
