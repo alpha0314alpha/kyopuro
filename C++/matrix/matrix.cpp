@@ -1,9 +1,9 @@
 template<typename T> class matrix{
 private:
     using mat = vector<vector<T>>;
+public:
     int sz;
     mat A;
-public:
     explicit matrix(int sz, T val = T()) : sz(sz), A(sz, vector<T>(sz, val)) {}
 
     vector<T>& operator [] (int i){
