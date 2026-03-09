@@ -6,10 +6,10 @@ template<typename T> class maxflow{
     };
 
     int N;
-    vector<vector<edge>> G;
     vector<int> level, it;
 
 public:
+    vector<vector<edge>> G;
     maxflow(int n) : N(n), G(n), level(n), it(n) {}
 
     void add_edge(int u, int v, T cap){
