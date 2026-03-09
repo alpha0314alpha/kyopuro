@@ -32,14 +32,14 @@ public:
         lz.assign(size, id());
     }
 
-    void set(int p, S x){
-        d[p+size] += x;
-    }
-
     S get(int p){
         p += size;
         for(int i = log; i >= 1; i--) push(p>>i);
         return d[p];
+    }
+
+    void set(int p, S x){
+        d[p+size] = x;
     }
 
     void build(){
@@ -79,5 +79,53 @@ public:
             if(((l>>i)<<i)!=l) update(l>>i);
             if(((r>>i)<<i)!=r) update((r-1)>>i);
         }
+    }
+
+    template<class G> int max_right(int l, G g){
+        if(l == _n) return _n;
+        l += size;
+        for(int i = log; i >= 1; i--) push(l>>i);
+        S sm = e();
+        do{
+            while((l&1) == 0) l >>= 1;
+            if(!g(op(sm, d[l]))){
+                while(l < size){
+                    push(l);
+                    l <<= 1;
+                    if(g(op(sm, d[l]))){
+                        sm = op(sm, d[l]);
+                        l++;
+                    }
+                }
+                return l - size;
+            }
+            sm = op(sm, d[l]);
+            l++;
+        }while((l&-l) != l);
+        return _n;
+    }
+
+    template<class G> int min_left(int r, G g){
+        if(r == 0) return 0;
+        r += size;
+        for(int i = log; i >= 1; i--) push((r-1)>>i);
+        S sm = e();
+        do{
+            r--;
+            while(r > 1 && (r&1)) r >>= 1;
+            if(!g(op(d[r], sm))){
+                while(r < size){
+                    push(r);
+                    r = 2*r + 1;
+                    if(g(op(d[r], sm))){
+                        sm = op(d[r], sm);
+                        r--;
+                    }
+                }
+                return r+1-size;
+            }
+            sm = op(d[r], sm);
+        }while((r&-r) != r);
+        return 0;
     }
 };
