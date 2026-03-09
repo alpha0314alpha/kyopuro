@@ -1,6 +1,7 @@
 #include <bits/stdc++.h>
 // #define MOD 1000000007ll
 #define MOD 998244353ll
+// #define MOD 10007ll
 #define INF (1ll<<60)
 #define EPS 1e-14
 #define lb lower_bound
@@ -182,6 +183,53 @@ bool iskaibun(string s){
 	reverse(t.begin(), t.end());
 	return s == t;
 }
+
+template<typename T> class intervalset{
+public:
+    set<pair<T, T>> s;
+
+    void add(T l, T r){
+        auto it = s.lower_bound({l, numeric_limits<T>::lowest()});
+        if (it != s.begin()) it--;
+        while (it != s.end()){
+            if (it->second < l){
+                it++;
+                continue;
+            }
+            if (it->first > r) break;
+            l = min(l, it->first);
+            r = max(r, it->second);
+            it = s.erase(it);
+        }
+        s.insert({l, r});
+    }
+
+    void remove(T l, T r){
+        auto it = s.lower_bound({l+1, numeric_limits<T>::lowest()});
+        if (it != s.begin()) it--;
+        vector<pair<T, T>> add;
+        while (it != s.end()){
+            T L = it->first;
+            T R = it->second;
+            if (R < l){
+                it++;
+                continue;
+            }
+            if (L > r) break;
+            if (L < l) add.push_back({L, l-1});
+            if (R > r) add.push_back({r+1, R});
+            it = s.erase(it);
+        }
+
+        for (auto p : add) s.insert(p);
+    }
+
+    void print(){
+        for (auto p : s){
+            cout << '[' << p.first << ',' << p.second << ']' << endl;
+        }
+    }
+};
 
 class rollinghash{
 private:
@@ -437,10 +485,11 @@ namespace graph{
         };
 
         int N;
-        vector<vector<edge>> G;
         vector<int> level, it;
 
     public:
+        vector<vector<edge>> G;
+
         maxflow(int n) : N(n), G(n), level(n), it(n) {}
 
         void add_edge(int u, int v, T cap){
@@ -621,13 +670,13 @@ namespace tree{
             for (int i = size-1; i > 0; i--) seg[i] = op(seg[i<<1], seg[i<<1|1]);
         }
 
-        void update(int i, T val){
+        void set(int i, T val){
             i += size;
             seg[i] = val;
             while (i >>= 1) seg[i] = op(seg[i<<1], seg[i<<1|1]);
         }
 
-        T query(int l, int r){
+        T prod(int l, int r){
             T L = e, R = e;
             for (l += size, r += size; l < r; l >>= 1, r >>= 1){
                 if (l&1) L = op(L, seg[l++]);
@@ -641,7 +690,7 @@ namespace tree{
         }
 
         void add(int i, T val){
-            update(i, get(i)+val);
+            set(i, get(i)+val);
         }
 
         template<typename F> int max_right(int l, F f){
@@ -723,14 +772,14 @@ namespace tree{
             lz.assign(size, id());
         }
 
-        void set(int p, S x){
-            d[p+size] += x;
-        }
-
         S get(int p){
             p += size;
             for(int i = log; i >= 1; i--) push(p>>i);
             return d[p];
+        }
+
+        void set(int p, S x){
+            d[p+size] = x;
         }
 
         void build(){
@@ -770,6 +819,54 @@ namespace tree{
                 if(((l>>i)<<i)!=l) update(l>>i);
                 if(((r>>i)<<i)!=r) update((r-1)>>i);
             }
+        }
+
+        template<class G> int max_right(int l, G g){
+            if(l == _n) return _n;
+            l += size;
+            for(int i = log; i >= 1; i--) push(l>>i);
+            S sm = e();
+            do{
+                while((l&1) == 0) l >>= 1;
+                if(!g(op(sm, d[l]))){
+                    while(l < size){
+                        push(l);
+                        l <<= 1;
+                        if(g(op(sm, d[l]))){
+                            sm = op(sm, d[l]);
+                            l++;
+                        }
+                    }
+                    return l - size;
+                }
+                sm = op(sm, d[l]);
+                l++;
+            }while((l&-l) != l);
+            return _n;
+        }
+
+        template<class G> int min_left(int r, G g){
+            if(r == 0) return 0;
+            r += size;
+            for(int i = log; i >= 1; i--) push((r-1)>>i);
+            S sm = e();
+            do{
+                r--;
+                while(r > 1 && (r&1)) r >>= 1;
+                if(!g(op(d[r], sm))){
+                    while(r < size){
+                        push(r);
+                        r = 2*r + 1;
+                        if(g(op(d[r], sm))){
+                            sm = op(d[r], sm);
+                            r--;
+                        }
+                    }
+                    return r+1-size;
+                }
+                sm = op(d[r], sm);
+            }while((r&-r) != r);
+            return 0;
         }
     };
 
@@ -846,6 +943,18 @@ namespace num{
 		}
 		return res;
 	}
+
+    template<typename T> ll tentousuu(vector<T>& A){
+        auto Z = zaatu(A);
+        int N = A.size();
+        ll res = 0;
+        tree::fenwicktree<int> F(N+1);
+        for (int i = N-1; i >= 0; i--){
+            res += F.sum(Z[i]-1);
+            F.add(Z[i], 1);
+        }
+        return res;
+    }
 
     vector<bool> make_isprime(int N){
         vector<bool> isprime(N+1, true);
@@ -1150,10 +1259,10 @@ namespace num{
 namespace matrix{
     template<typename T> class matrix{
     private:
+    public:
         using mat = vector<vector<T>>;
         int sz;
         mat A;
-    public:
         explicit matrix(int sz, T val = T()) : sz(sz), A(sz, vector<T>(sz, val)) {}
 
         vector<T>& operator [] (int i){
@@ -1172,6 +1281,15 @@ namespace matrix{
             matrix I(n);
             for (int i = 0; i < n; i++) I[i][i] = T(1);
             return I;
+        }
+
+        friend istream& operator >> (istream& is, matrix& M){
+            for(int i = 0; i < M.size(); i++){
+                for(int j = 0; j < M.size(); j++){
+                    is >> M[i][j];
+                }
+            }
+            return is;
         }
 
         matrix operator + (const matrix& B) const{
@@ -1248,7 +1366,7 @@ namespace matrix{
         }
     };
 
-        class waveletmatrix{
+    class waveletmatrix{
     private:
         int n, LOG;
         vector<vector<int>> bit;
@@ -1340,16 +1458,8 @@ namespace matrix{
     };
 }
 
-template<typename T> istream& operator >> (istream& is, matrix::matrix<T>& M){
-    for(int i = 0; i < M.size(); i++){
-        for(int j = 0; j < M.size(); j++){
-            is >> M[i][j];
-        }
-    }
-    return is;
-}
-
-#if MOD == 998244353ll
+// #if MOD == 998244353ll
+#if MOD == 1ll
 namespace fps{
     using mint = num::modint<998244353>;
     using F = vector<mint>;
@@ -1420,21 +1530,22 @@ namespace fps{
         }
         return res;
     }
-} 
+}
 #endif
 
 #ifndef ONLINE_JUDGE
-signed testcases = 10;
+int testcases = 10;
 #else
-signed testcases = 1;
+int testcases = 1;
 #endif
 using mint = num::modint<MOD>;
 using num::modpow;
 template<typename T> using fenwicktree = tree::fenwicktree<T>;
 template<typename T> using segtree = tree::segtree<T>;
+template<typename T, typename U> using lazy_segtree = tree::lazy_segtree<T, U>;
 
 void solve();
-signed main(){
+int main(){
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
     cout << fixed << setprecision(20);
@@ -1444,5 +1555,5 @@ signed main(){
     return 0;
 }
 
-#define int long long 
+#define int long long
 void solve(){}
