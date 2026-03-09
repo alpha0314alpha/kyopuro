@@ -14,13 +14,13 @@ public:
         for (int i = size-1; i > 0; i--) seg[i] = op(seg[i<<1], seg[i<<1|1]);
     }
 
-    void update(int i, T val){
+    void set(int i, T val){
         i += size;
         seg[i] = val;
         while (i >>= 1) seg[i] = op(seg[i<<1], seg[i<<1|1]);
     }
 
-    T query(int l, int r){
+    T prod(int l, int r){
         T L = e, R = e;
         for (l += size, r += size; l < r; l >>= 1, r >>= 1){
             if (l&1) L = op(L, seg[l++]);
@@ -34,7 +34,7 @@ public:
     }
 
     void add(int i, T val){
-        update(i, get(i)+val);
+        set(i, get(i)+val);
     }
 
     template<typename F> int max_right(int l, F f){
