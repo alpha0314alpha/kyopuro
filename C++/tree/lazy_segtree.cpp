@@ -46,7 +46,10 @@ public:
     }
 
     void set(int p, S x){
-        d[p+size] = x;
+        p += size;
+        for(int i = log; i >= 1; i--) push(p>>i);
+        d[p] = x;
+        for(int i = 1; i <= log; i++) update(p>>i);
     }
 
     void build(){
