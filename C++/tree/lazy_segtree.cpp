@@ -3,11 +3,17 @@ private:
     int _n, size, log;
     vector<S> d;
     vector<F> lz;
-    function<S(S, S)> op;
-    function<S()> e;
-    function<S(F, S)> mapping;
-    function<F(F, F)> composition;
-    function<F()> id;
+    // function<S(S, S)> op;
+    // function<S()> e;
+    // function<S(F, S)> mapping;
+    // function<F(F, F)> composition;
+    // function<F()> id;
+
+    S (*op)(S, S);
+    S (*e)()
+    S (*mapping)(F, S);
+    F (*composition)(F, F);
+    F (*id)();
 
     void update(int k){
         d[k] = op(d[2*k], d[2*k+1]);
