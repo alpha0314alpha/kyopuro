@@ -10,7 +10,7 @@ private:
     // function<F()> id;
 
     S (*op)(S, S);
-    S (*e)()
+    S (*e)();
     S (*mapping)(F, S);
     F (*composition)(F, F);
     F (*id)();
@@ -30,7 +30,8 @@ private:
         lz[k] = id();
     }
 public:
-    lazy_segtree(int n, function<S(S,S)> op, function<S()> e, function<S(F,S)> mapping, function<F(F,F)> composition, function<F()> id) : _n(n), op(op), e(e), mapping(mapping), composition(composition), id(id){
+    // lazy_segtree(int n, function<S(S,S)> op, function<S()> e, function<S(F,S)> mapping, function<F(F,F)> composition, function<F()> id) : _n(n), op(op), e(e), mapping(mapping), composition(composition), id(id){
+    lazy_segtree(int n, S (*op)(S, S), S (*e)(), S (*mapping)(F, S), F(*composition)(F, F), F (*id)()) : _n(n), op(op), e(e), mapping(mapping), composition(composition), id(id){
         size = 1;
         log = 0;
         while(size < n) size <<= 1, log++;
