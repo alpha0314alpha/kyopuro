@@ -1445,4 +1445,6 @@ signed main(){
 }
 
 #define int long long 
-void solve(){}
+void solve(){
+    
+}
