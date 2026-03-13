@@ -3,11 +3,17 @@ private:
     int _n, size, log;
     vector<S> d;
     vector<F> lz;
-    function<S(S, S)> op;
-    function<S()> e;
-    function<S(F, S)> mapping;
-    function<F(F, F)> composition;
-    function<F()> id;
+    // function<S(S, S)> op;
+    // function<S()> e;
+    // function<S(F, S)> mapping;
+    // function<F(F, F)> composition;
+    // function<F()> id;
+
+    S (*op)(S, S);
+    S (*e)();
+    S (*mapping)(F, S);
+    F (*composition)(F, F);
+    F (*id)();
 
     void update(int k){
         d[k] = op(d[2*k], d[2*k+1]);
@@ -24,7 +30,8 @@ private:
         lz[k] = id();
     }
 public:
-    lazy_segtree(int n, function<S(S,S)> op, function<S()> e, function<S(F,S)> mapping, function<F(F,F)> composition, function<F()> id) : _n(n), op(op), e(e), mapping(mapping), composition(composition), id(id){
+    // lazy_segtree(int n, function<S(S,S)> op, function<S()> e, function<S(F,S)> mapping, function<F(F,F)> composition, function<F()> id) : _n(n), op(op), e(e), mapping(mapping), composition(composition), id(id){
+    lazy_segtree(int n, S (*op)(S, S), S (*e)(), S (*mapping)(F, S), F(*composition)(F, F), F (*id)()) : _n(n), op(op), e(e), mapping(mapping), composition(composition), id(id){
         size = 1;
         log = 0;
         while(size < n) size <<= 1, log++;
@@ -39,7 +46,10 @@ public:
     }
 
     void set(int p, S x){
-        d[p+size] = x;
+        p += size;
+        for(int i = log; i >= 1; i--) push(p>>i);
+        d[p] = x;
+        for(int i = 1; i <= log; i++) update(p>>i);
     }
 
     void build(){
