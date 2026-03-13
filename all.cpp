@@ -184,6 +184,42 @@ bool iskaibun(string s){
 	return s == t;
 }
 
+class mos{
+private:
+    struct query{
+        int l, r, idx;
+    };
+    int n, block;
+    vector<query> qs;
+public:
+
+    mos(int n) : n(n){
+        block = sqrt(n);
+    }
+
+    void add_query(int l, int r){
+        qs.push_back({l, r, (int)qs.size()});
+    }
+
+    template<class ADD, class REMOVE, class OUTPUT>
+    void run(ADD add, REMOVE remove, OUTPUT output){
+        sort(qs.begin(), qs.end(), [&](query a, query b){
+            int ablock = a.l/block, bblock = b.l/block;
+            if (ablock != bblock) return ablock < bblock;
+            if (ablock&1) return a.r > b.r;
+            return a.r < b.r;
+        });
+        int l = 0, r = 0;
+        for (auto& q : qs){
+            while (l > q.l) add(--l);
+            while (r < q.r) add(r++);
+            while (l < q.l) remove(l++);
+            while (r > q.r) remove(--r);
+            output(q.idx);
+        }
+    }
+};
+
 template<typename T> class intervalset{
 public:
     set<pair<T, T>> s;
@@ -476,6 +512,70 @@ namespace graph{
 			return compcount;
 		}
 	};
+
+    template<typename T = long long> class rerooting{
+    private:
+        int n;
+        T id;
+        vector<vector<int>> g;
+        vector<T> dp, ans;
+        function<T(T, T)> merge;
+        function<T(T)> add_root;
+
+    public:
+        rerooting(int n, T id, function<T(T, T)> merge, function<T(T)> add_root) : n(n), g(n), dp(n), ans(n), id(id), merge(merge), add_root(add_root) {}
+
+        void add_edge(int u, int v){
+            g[u].push_back(v);
+            g[v].push_back(u);
+        }
+
+        void dfs1(int n, int p){
+            T res = id;
+            for (int i : g[n]) if (i != p){
+                dfs1(i, n);
+                res = merge(res, add_root(dp[i]));
+            }
+            dp[n] = res;
+        }
+
+
+        void dfs2(int n, int p, T from_parent){
+            int deg = g[n].size();
+            vector<T> prefix(deg+1, id), suffix(deg+1, id);
+
+            for (int i = 0; i < deg; i++){
+                int to = g[n][i];
+                T val;
+                if (to == p) val = add_root(from_parent);
+                else val = add_root(dp[to]);
+                prefix[i+1] = merge(prefix[i], val);
+            }
+
+            for (int i = deg-1; i >= 0; i--){
+                int to = g[n][i];
+                T val;
+                if (to == p) val = add_root(from_parent);
+                else val = add_root(dp[to]);
+                suffix[i] = merge(suffix[i+1], val);
+            }
+
+            ans[n] = add_root(prefix[deg]);  // ★ここ修正
+
+            for (int i = 0; i < deg; i++){
+                int to = g[n][i];
+                if (to == p) continue;
+                T val = merge(prefix[i], suffix[i+1]);
+                dfs2(to, n, val);
+            }
+        }
+        vector<T> output(){
+            dfs1(0, -1);
+            dfs2(0, -1, id);
+            return ans;
+        }
+    };
+
 	
     template<typename T> class maxflow{
         struct edge{
@@ -779,7 +879,10 @@ namespace tree{
         }
 
         void set(int p, S x){
-            d[p+size] = x;
+            p += size;
+            for(int i = log; i >= 1; i--) push(p>>i);
+            d[p] = x;
+            for(int i = 1; i <= log; i++) update(p>>i);
         }
 
         void build(){
@@ -870,67 +973,67 @@ namespace tree{
         }
     };
 
-    class trietree{
-    public:
-        static const int SIGMA = 256;
-        vector<array<int, SIGMA>> nxt;
-        vector<bool> is_end;
-        vector<int> cnt;
+        class trietree{
+        public:
+            static const int SIGMA = 256;
+            vector<array<int, SIGMA>> nxt;
+            vector<bool> is_end;
+            vector<int> cnt;
 
-        trietree(){
-            nxt.emplace_back();
-            nxt[0].fill(-1);
-            is_end.push_back(false);
-            cnt.push_back(0);
-        }
+            trietree(){
+                nxt.emplace_back();
+                nxt[0].fill(-1);
+                is_end.push_back(false);
+                cnt.push_back(0);
+            }
 
-        void insert(const string& s){
-            int v = 0;
-            for (unsigned char c : s){
-                if (nxt[v][c] == -1){
-                    nxt[v][c] = nxt.size();
-                    nxt.emplace_back();
-                    nxt.back().fill(-1);
-                    is_end.push_back(false);
-                    cnt.push_back(0);
+            void insert(const string& s){
+                int v = 0;
+                for (unsigned char c : s){
+                    if (nxt[v][c] == -1){
+                        nxt[v][c] = nxt.size();
+                        nxt.emplace_back();
+                        nxt.back().fill(-1);
+                        is_end.push_back(false);
+                        cnt.push_back(0);
+                    }
+                    v = nxt[v][c];
+                    cnt[v]++;
                 }
-                v = nxt[v][c];
-                cnt[v]++;
+                is_end[v] = true;
             }
-            is_end[v] = true;
-        }
 
-        bool search(const string& s) const{
-            int v = 0;
-            for (unsigned char c : s){
-                if (nxt[v][c] == -1) return false;
-                v = nxt[v][c];
+            bool search(const string& s) const{
+                int v = 0;
+                for (unsigned char c : s){
+                    if (nxt[v][c] == -1) return false;
+                    v = nxt[v][c];
+                }
+                return is_end[v];
             }
-            return is_end[v];
-        }
 
-        bool starts_with(const string& s) const{
-            int v = 0;
-            for (unsigned char c : s){
-                if (nxt[v][c] == -1) return false;
-                v = nxt[v][c];
+            bool starts_with(const string& s) const{
+                int v = 0;
+                for (unsigned char c : s){
+                    if (nxt[v][c] == -1) return false;
+                    v = nxt[v][c];
+                }
+                return true;
             }
-            return true;
-        }
 
-        int max_lcp(const string& s) const{
-            int v = 0;
-            int depth = 0;
-            int ans = 0;
-            for (unsigned char c : s){
-                v = nxt[v][c];
-                depth++;
-                if (cnt[v] >= 2) ans = depth;
+            int max_lcp(const string& s) const{
+                int v = 0;
+                int depth = 0;
+                int ans = 0;
+                for (unsigned char c : s){
+                    v = nxt[v][c];
+                    depth++;
+                    if (cnt[v] >= 2) ans = depth;
+                }
+                return ans;
             }
-            return ans;
-        }
-    };
-}
+        };
+    }
 
 namespace num{
 	ll modpow(ll a, ll e, ll mod = MOD){
@@ -1550,10 +1653,11 @@ int main(){
     cin.tie(nullptr);
     cout << fixed << setprecision(20);
     // cin >> testcases;
-    testcases = 1;
+    // testcases = 1;
     while (testcases--) solve();
     return 0;
 }
 
 #define int long long
-void solve(){}
+void solve(){
+}
