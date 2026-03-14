@@ -52,7 +52,7 @@
 
         vector<T> output(){
             dfs1(0, -1);
-            dfs2(0, -1, id);
+            dfs2(0, -1, add_root(id));
             return ans;
         }
     };
