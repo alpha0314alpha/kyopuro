@@ -1,62 +1,59 @@
-template<typename T = long long> class rerooting{
-private:
-    int n;
-    T id;
-    vector<vector<int>> g;
-    vector<T> dp, ans;
-    function<T(T, T)> merge;
-    function<T(T)> add_root;
+    template<typename T = long long> class rerooting{
+    private:
+        int n;
+        T id;
+        vector<vector<int>> g;
+        vector<T> dp, ans;
+        function<T(T, T)> merge;
+        function<T(T)> add_root;
 
-public:
-    rerooting(int n, T id, function<T(T, T)> merge, function<T(T)> add_root) : n(n), g(n), dp(n), ans(n), id(id), merge(merge), add_root(add_root) {}
+    public:
+        rerooting(int n, T id, function<T(T, T)> merge, function<T(T)> add_root) : n(n), g(n), dp(n), ans(n), id(id), merge(merge), add_root(add_root) {}
 
-    void add_edge(int u, int v){
-        g[u].push_back(v);
-        g[v].push_back(u);
-    }
-
-    void dfs1(int n, int p){
-        T res = id;
-        for (int i : g[n]) if (i != p){
-            dfs1(i, n);
-            res = merge(res, add_root(dp[i]));
-        }
-        dp[n] = res;
-    }
-
-
-    void dfs2(int n, int p, T from_parent){
-        int deg = g[n].size();
-        vector<T> prefix(deg+1, id), suffix(deg+1, id);
-
-        for (int i = 0; i < deg; i++){
-            int to = g[n][i];
-            T val;
-            if (to == p) val = add_root(from_parent);
-            else val = add_root(dp[to]);
-            prefix[i+1] = merge(prefix[i], val);
+        void add_edge(int u, int v){
+            g[u].push_back(v);
+            g[v].push_back(u);
         }
 
-        for (int i = deg-1; i >= 0; i--){
-            int to = g[n][i];
-            T val;
-            if (to == p) val = add_root(from_parent);
-            else val = add_root(dp[to]);
-            suffix[i] = merge(suffix[i+1], val);
+        void dfs1(int v, int p){
+            T res = id;
+            for (int i : g[v]) if (i != p){
+                dfs1(i, v);
+                res = merge(res, add_root(dp[i]));
+            }
+            dp[v] = res;
         }
 
-        ans[n] = add_root(prefix[deg]);  // ★ここ修正
 
-        for (int i = 0; i < deg; i++){
-            int to = g[n][i];
-            if (to == p) continue;
-            T val = merge(prefix[i], suffix[i+1]);
-            dfs2(to, n, val);
+        void dfs2(int v, int p, T from_parent){
+            int deg = g[v].size();
+            vector<T> prefix(deg+1, id), suffix(deg+1, id);
+            for (int i = 0; i < deg; i++){
+                int to = g[v][i];
+                T val;
+                if (to == p) val = add_root(from_parent);
+                else val = add_root(dp[to]);
+                prefix[i+1] = merge(prefix[i], val);
+            }
+            for (int i = deg-1; i >= 0; i--){
+                int to = g[v][i];
+                T val;
+                if (to == p) val = add_root(from_parent);
+                else val = add_root(dp[to]);
+                suffix[i] = merge(suffix[i+1], val);
+            }
+            ans[v] = add_root(prefix[deg]);
+            for (int i = 0; i < deg; i++){
+                int to = g[v][i];
+                if (to == p) continue;
+                T val = merge(prefix[i], suffix[i+1]);
+                dfs2(to, v, val);
+            }
         }
-    }
-    vector<T> output(){
-        dfs1(0, -1);
-        dfs2(0, -1, id);
-        return ans;
-    }
-};
+
+        vector<T> output(){
+            dfs1(0, -1);
+            dfs2(0, -1, id);
+            return ans;
+        }
+    };
