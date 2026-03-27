@@ -1,4 +1,4 @@
-public class comb{
+class comb{
     int size;
     long mod;
     long[] fact, invfact;
