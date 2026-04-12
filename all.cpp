@@ -8,9 +8,12 @@ int testcases = 10;
 #include <atcoder/all>
 int testcases = 1;
 #endif
+#pragma GCC target("avx2")
+#pragma GCC optimize("O3")
+#pragma GCC optimize("unroll-loops")
 
-#define MOD 1000000007ll
-// #define MOD 998244353ll
+// #define MOD 1000000007ll
+#define MOD 998244353ll
 // #define MOD 10007ll
 #define INF (long long)4e18
 #define EPS 1e-14
@@ -30,6 +33,7 @@ int testcases = 1;
 #define nall(A) A.begin(), A.end()
 #define rall(A) A.rbegin(), A.rend()
 #define rep(i, n) for(int i = 0; i < (n); i++) 
+#define replr(i, l, r) for (int i = l; i < r; i++)
 #define rrep(i, n) for(int i = (n)-1; i >= 0; i--)
 #define each(i, a) for(auto& i : a)
 #define out(x, y) (!(0 <= x && x < H && 0 <= y && y < W))
@@ -38,7 +42,6 @@ int testcases = 1;
 #define yesno(a) cout<<(a?"Yes":"No")<<endl
 #define sanko(a, b, c) (a? b: c)
 #define ci cin
-#define tostr to_string
 #define func function
 #define uniqueerase(A) A.erase(unique(A.begin(), A.end()), A.end())
 using namespace std;
@@ -49,6 +52,7 @@ using lll = __int128;
 using ld = long double;
 template<typename T> using pq = priority_queue<T>;
 template<typename T> using pqg = priority_queue<T, vector<T>, greater<T>>;
+template<typename T> using vec = vector<T>;
 template<typename T> using vv = vector<vector<T>>;
 template<typename T> using vvv = vector<vv<T>>;
 template<typename T> using vvvv = vector<vvv<T>>;
@@ -57,6 +61,7 @@ template<typename T> using arr2 = array<T, 2>;
 // template<typename T> using uset = unorderd_set<T>;
 // template<typename T> using umap = unorderd_map<T>;
 template<typename T> using mset = multiset<T>;
+static mt19937_64 rng(chrono::steady_clock::now().time_since_epoch().count());
 const ll ROOT = (MOD == 998244353ll? 3: 5);
 const int dx[] = { 1, 0, -1, 0 };
 const int dy[] = { 0, 1, 0, -1 };
@@ -190,7 +195,7 @@ vector<int> zaatu(const string& A){
 	return res;
 }
 
-template<typename T> vector<int> zaatu(const vector<T>& A){
+template<typename T> vector<int> zaatu32(const vector<T>& A){
 	int N = (int)A.size();
 	vector<T> B = A;
 	sort(B.begin(), B.end());
@@ -202,10 +207,16 @@ template<typename T> vector<int> zaatu(const vector<T>& A){
 	return res;
 }
 
-bool iskaibun(string s){
-	string t = s;
-	reverse(t.begin(), t.end());
-	return s == t;
+template<typename T> vector<ll> zaatu(const vector<T>& A){
+	int N = (int)A.size();
+	vector<T> B = A;
+	sort(B.begin(), B.end());
+	B.erase(unique(B.begin(), B.end()), B.end());
+	vector<ll> res(N);
+	for (int i = 0; i < N; i++){
+		res[i] = lower_bound(B.begin(), B.end(), A[i])-B.begin();
+	}
+	return res;
 }
 
 class mos{
@@ -473,11 +484,10 @@ namespace graph{
         return res;
     }
 
-	class dsu{
-	private:
+	struct dsu{
 		vector<int> parent;
 		vector<int> sz;
-	public:
+
 		dsu(int n){
 			parent.resize(n);
 			sz.assign(n, 1);
@@ -496,6 +506,7 @@ namespace graph{
 			if (sz[x] < sz[y]) swap(x, y);
 			parent[y] = x;
 			sz[x] += sz[y];
+            return;
 		}
 
 		bool same(int x, int y){
@@ -693,60 +704,100 @@ namespace graph{
         }
     };
 
-	class scc{
-	public:
-		int N;
-		vector<vector<int>> graph;
-		vector<int> ord, low, comp;
-		vector<bool> in_stack;
-		stack<int> st;
-		int noword = 0, compcount = 0;
+    struct scc{
+        int N;
+        vector<vector<int>> G, RG;
+        vector<int> comp, order;
+        vector<bool> used;
 
-		scc(int n) : N(n), graph(n) {}
+        scc(int n) : N(n), G(n), RG(n), comp(n, -1), used(n, false) {}
 
-		void add_edge(int u, int v){
-			graph[u].push_back(v);
-		}
+        void add_edge(int u, int v){
+            G[u].push_back(v);
+            RG[v].push_back(u);
+        }
 
-		void dfs(int v){
-			noword++;
-			ord[v] = noword;
-			low[v] = noword;
-			st.push(v);
-			in_stack[v] = true;
-			for (int to : graph[v]){
-				if (ord[to] == -1){
-					dfs(to);
-					low[v] = min(low[v], low[to]);
-				}
-				else if (in_stack[to]){
-					low[v] = min(low[v], ord[to]);
-				}
-			}
-			if (ord[v] == low[v]){
-				while (true){
-					int u = st.top();
-					st.pop();
-					in_stack[u] = false;
-					comp[u] = compcount;
-					if (u == v) break;
-				}
-				compcount++;
-			}
-		}
+        void dfs(int n){
+            used[n] = true;
+            for (int i : G[n]) if (!used[i]) dfs(i);
+            order.push_back(n);
+        }
 
-		int build(){
-            noword = 0, compcount = 0;
-			ord.assign(N, -1);
-			low.resize(N);
-			comp.resize(N);
-			in_stack.assign(N, false);
-			for (int i = 0; i < N; i++){
-				if (ord[i] == -1) dfs(i);
-			}
-			return compcount;
-		}
-	};
+        void rdfs(int n, int k){
+            comp[n] = k;
+            for (int i : RG[n]) if (comp[i] == -1) rdfs(i, k);
+        }
+
+        vector<vector<int>> build(){
+            for (int i = 0; i < N; i++) if (!used[i]) dfs(i);
+            reverse(order.begin(), order.end());
+            int k = 0;
+            for (int i : order) if (comp[i] == -1) rdfs(i, k++);
+            vector<vector<int>> res(k);
+            for (int i = 0; i < N; i++) res[comp[i]].push_back(i);
+            return res;
+        }
+    };
+
+    struct tecc{
+        int N;
+        vector<vector<pair<int, int>>> G;
+        vector<pair<int, int>> E;
+        vector<int> ord, low, comp;
+        vector<bool> is_bridge;
+        int timer = 0;
+
+        tecc(int n) : N(n), G(n), ord(n, -1), low(n) {}
+        
+        void add_edge(int u, int v){
+            int id = E.size();
+            E.emplace_back(u, v);
+            G[u].emplace_back(v, id);
+            G[v].emplace_back(u, id);
+        }
+
+        void dfs(int n, int p = -1){
+            ord[n] = low[n] = timer++;
+            for (auto [i, id] : G[n]) if (id != p){
+                if (ord[i] != -1) low[n] = min(low[n], ord[i]);
+                else{
+                    dfs(i, id);
+                    low[n] = min(low[n], low[i]);
+                    if (ord[n] < low[i]) is_bridge[id] = true;
+                }
+            }
+        }
+
+        vector<vector<int>> build(){
+            fill(ord.begin(), ord.end(), -1);
+            timer = 0;
+            is_bridge.assign(E.size(), false);
+            for (int i = 0; i < N; i++) if (ord[i] == -1) dfs(i);
+            dsu uf(N);
+            for (int i = 0; i < (int)E.size(); i++){
+                if (is_bridge[i]) continue;
+                auto [u, v] = E[i];
+                uf.merge(u, v);
+            }
+            comp.resize(N);
+            map<int, int> mp;
+            int idx = 0;
+            for (int i = 0; i < N; i++){
+                int r = uf.root(i);
+                if (!mp.count(r)) mp[r] = idx++;
+                comp[i] = mp[r];
+            }
+            vector<vector<int>> tree(idx);
+            for (int i = 0; i < (int)E.size(); i++){
+                if (!is_bridge[i]) continue;
+                auto [u, v] = E[i];
+                int a = comp[u], b = comp[v];
+                tree[a].push_back(b);
+                tree[b].push_back(a);
+            }
+            return tree;
+        }
+    };
 
     template<typename T> class rerooting{
     private:
@@ -950,6 +1001,68 @@ namespace graph{
             return {flow, cost};
         }
     };
+
+    class hld{
+    private:
+    public:
+        int N, cur;
+        vector<vector<int>> G;
+        vector<int> parent, depth, heavy, head, pos, sz;
+
+        hld(int n) : N(n), G(n), parent(n), depth(n), heavy(n, -1), head(n), pos(n), sz(n) {}
+
+        void add_edge(int u, int v){
+            G[u].push_back(v);
+            G[v].push_back(u);
+        }
+
+        int dfs(int n, int p){
+            parent[n] = p;
+            sz[n] = 1;
+            int maxsz = 0;
+            for (int i : G[n]) if (i != p){
+                depth[i] = depth[n]+1;
+                int sub = dfs(i, n);
+                sz[n] += sub;
+                if (sub > maxsz){
+                    maxsz = sub;
+                    heavy[n] = i;
+                }
+            }
+            return sz[n];
+        }
+
+        void decompose(int n, int h){
+            head[n] = h, pos[n] = cur++;
+            if (heavy[n] != -1) decompose(heavy[n], h);
+            for (int to : G[n]) if (to != parent[n] && to != heavy[n]) decompose(to, to);
+        }
+
+        void build(int root = 0){
+            cur = 0;
+            depth[root] = 0;
+            dfs(root, -1);
+            decompose(root, root);
+        }
+
+        template<class F> void query(int u, int v, const F& f){
+            while (head[u] != head[v]){
+                if (depth[head[u]] < depth[head[v]]) swap(u, v);
+                f(pos[head[u]], pos[u]);
+                u = parent[head[u]];
+            }
+            if (depth[u] > depth[v]) swap(u, v);
+            f(pos[u], pos[v]);
+        }
+
+        int lca(int u, int v){
+            while (head[u] != head[v]){
+                if (depth[head[u]] < depth[head[v]]) swap(u, v);
+                u = parent[head[u]];
+            }
+            return depth[u] < depth[v]? u: v;
+        }
+    };
 }
 
 namespace tree{
@@ -993,17 +1106,61 @@ namespace tree{
 		}
 
         int lower_bound(T x){
-            int i = 0, k = 1;
+            int i = -1, k = 1;
             while(k<<1 <= n) k <<= 1;
             for(; k > 0; k >>= 1){
-                if(i+k <= n && bit[i+k] < x){
+                if(i+k < n && bit[i+k] < x){
                     x -= bit[i+k];
                     i += k;
                 }
             }
-            return i;
+            return i + 1;
         }
 	};
+
+    template<typename T> class lazy_fenwicktree{
+    private:
+        int n;
+        vector<T> bit1, bit2;
+
+        void add(vector<T>& bit, int i, T x){
+            while (i < n){
+                bit[i] += x;
+                i |= i+1;
+            }
+        }
+
+        T sum(const vector<T>& bit, int i) const{
+            T res = T();
+            while(i >= 0){
+                res += bit[i];
+                i = (i&(i+1))-1;
+            }
+            return res;
+        }
+    public:
+        lazy_fenwicktree(int n) : n(n), bit1(n, T()), bit2(n, T()) {}
+
+        void apply(int l, int r, T x){
+            add(bit1, l, x);
+            if (r < n) add(bit1, r, -x);
+            add(bit2, l, x*l);
+            if (r < n) add(bit2, r, -x*r);
+        }
+
+        T prefix_sum(int r) const{
+            if (r <= 0) return T();
+            return sum(bit1, r-1)*r-sum(bit2, r-1);
+        }
+
+        T sum(int l, int r) const{
+            return prefix_sum(r)-prefix_sum(l);
+        }
+
+        T get(int i) const{
+            return sum(i, i+1);
+        }
+    };
 
     template<class T> class segtree{
     private:
@@ -1018,6 +1175,14 @@ namespace tree{
             while (size < n) size <<= 1;
             seg.assign(2*size, e);
             for (int i = 0; i < n; i++) seg[size+i] = A[i];
+            for (int i = size-1; i > 0; i--) seg[i] = op(seg[i<<1], seg[i<<1|1]);
+        }
+        segtree(int sz, T id, function<T(T, T)> op) : e(id), op(op){
+            n = sz;
+            size = 1;
+            while (size < n) size <<= 1;
+            seg.assign(2*size, e);
+            for (int i = 0; i < n; i++) seg[size+i] = e;
             for (int i = size-1; i > 0; i--) seg[i] = op(seg[i<<1], seg[i<<1|1]);
         }
 
@@ -1086,6 +1251,170 @@ namespace tree{
                 sm = op(seg[r], sm);
             }while((r&-r) != r);
             return 0;
+        }
+    };
+
+    template<typename T> class dynamic_segtree{
+    private:
+        struct Node{
+            T val;
+            Node *l, *r;
+            Node(T v) : val(v), l(nullptr), r(nullptr) {}
+        };
+
+        Node* root;
+        ll L, R;
+        function<T(T, T)> op;
+        function<T()> e;
+    public:
+        dynamic_segtree(ll L, ll R, function<T(T,T)> op, function<T()> e) : L(L), R(R), op(op), e(e), root(nullptr) {}
+
+        void set(ll pos, T x){
+            if (pos < L || pos >= R) return;
+            if (!root) root = new Node(e());
+            Node* node = root;
+            ll l = L, r = R;
+            vector<Node*> path;
+            while (true){
+                path.push_back(node);
+                if (r-l == 1) break;
+                ll mid = (l+r)/2;
+                if (pos < mid){
+                    if (!node->l) node->l = new Node(e());
+                    node = node->l;
+                    r = mid;
+                }
+                else{
+                    if (!node->r) node->r = new Node(e());
+                    node = node->r;
+                    l = mid;
+                }
+            }
+            node->val = x;
+            for (int i = (int)path.size()-2; i >= 0; i--){
+                Node* cur = path[i];
+                T lv = cur->l? cur->l->val: e();
+                T rv = cur->r? cur->r->val: e();
+                cur->val = op(lv, rv);
+            }
+        }
+
+        T get(ll pos) const{
+            if (pos < L || pos >= R) return e();
+            if (!root) return e();
+            Node* node = root;
+            ll l = L, r = R;
+            while (node){
+                if (r-l == 1) return node->val;
+                ll mid = (l+r)/2;
+                if (pos < mid) node = node->l, r = mid;
+                else node = node->r, l = mid;
+            }
+            return e();
+        }
+
+        T prod(ll ql, ll qr) const{
+            if (qr <= L || R <= ql) return e();
+            T res = e();
+            stack<tuple<Node*, ll, ll>> st;
+            st.emplace(root, L, R);
+            while (!st.empty()) {
+                auto [node, l, r] = st.top();
+                st.pop();
+                if (!node || r <= ql || qr <= l) continue;
+                if (ql <= l && r <= qr){
+                    res = op(res, node->val);
+                    continue;
+                }
+                ll mid = (l+r)/2;
+                st.emplace(node->l, l, mid);
+                st.emplace(node->r, mid, r);
+            }
+            return res;
+        }
+    };
+
+    template<typename T> struct persistent_segtree{
+    private:
+        struct node{
+            T val;
+            node *l, *r;
+            node(T v, node* l = nullptr, node* r = nullptr) : val(v), l(l), r(r) {}
+        };
+
+        int n;
+        T e;
+        function<T(T, T)> op;
+        vector<node*> roots;
+        node* build(int l, int r, const vector<T>& A){
+            if (l+1 == r){
+                if (l < (int)A.size()) return new node(A[l]);
+                return new node(e);
+            }
+            int m = (l+r)/2;
+            node* left = build(l, m, A);
+            node* right = build(m, r, A);
+            return new node(op(left->val, right->val), left, right);
+        }
+
+        node* update(node* cur, int l, int r, int idx, T val){
+            if (l+1 == r) return new node(val);
+            int m = (l+r)/2;
+            if (idx < m){
+                node* nl = update(cur->l, l, m, idx, val);
+                return new node(op(nl->val, cur->r->val), nl, cur->r);
+            }
+            else{
+                node* nr = update(cur->r, m, r, idx, val);
+                return new node(op(cur->l->val, nr->val), cur->l, nr);
+            }
+        }
+
+        T query(node* node, int l, int r, int ql, int qr){
+            if (qr <= l || r <= ql) return e;
+            if (ql <= l && r <= qr) return node->val;
+            int m = (l+r)/2;
+            return op(query(node->l, l, m, ql, qr), query(node->r, m, r, ql, qr));
+        }
+
+        T get_val(node* node, int l, int r, int idx){
+            if (l+1 == r) return node->val;
+            int m = (l+r)>>1;
+            if (idx < m) return get_val(node->l, l, m, idx);
+            else return get_val(node->r, m, r, idx);
+        }
+    public:
+
+        persistent_segtree(const vector<T>& A, T id, function<T(T,T)> op) : n(A.size()), e(id), op(op){
+            roots.push_back(build(0, n, A));
+        }
+
+        persistent_segtree(int sz, T id, function<T(T,T)> op) : n(sz), e(id), op(op){
+            vector<T> A;
+            roots.push_back(build(0, n, A));
+        }
+
+        int set(int v, int i, T val){
+            node* newRoot = update(roots[v], 0, n, i, val);
+            roots.push_back(newRoot);
+            return (int)roots.size()-1;
+        }
+
+        int add(int v, int i, T val){
+            T cur = get_val(roots[v], 0, n, i);
+            return set(v, i, cur+val);
+        }
+
+        T prod(int v, int l, int r){
+            return query(roots[v], 0, n, l, r);
+        }
+
+        T get(int v, int i){
+            return get_val(roots[v], 0, n, i);
+        }
+
+        int versions() const{
+            return roots.size();
         }
     };
 
@@ -1224,6 +1553,141 @@ namespace tree{
         }
     };
 
+    template<typename T, typename E> class godtree{
+    private:
+        struct Node{
+            T val, sum;
+            E lazy;
+            bool rev;
+            int sz, pri;
+            Node *l, *r;
+
+            Node(T v, E id) : val(v), sum(v), lazy(id), rev(false), sz(1), pri(rng()), l(nullptr), r(nullptr) {}
+        };
+
+        using F = function<T(T, T)>;
+        using G = function<T(T, E, int)>;
+        using H = function<E(E, E)>;
+        using I = function<T()>;
+        using J = function<E()>;
+
+        F op;
+        G mapping;
+        H composition;
+        I e;
+        J id;
+        Node* root = nullptr;
+    public:
+        godtree(F op, I e, G mapping, H composition, J id) : op(op), mapping(mapping), composition(composition), e(e), id(id) {}
+
+        int sz(Node* t){ return t? t->sz: 0; }
+        T sum(Node* t){ return t? t->sum: e(); }
+        Node* new_node(T v){ return new Node(v, id()); }
+        int size(){ return sz(root); }
+
+        T get(Node* t, int k){
+            push(t);
+            if (k < sz(t->l)) return get(t->l, k);
+            if (k == sz(t->l)) return t->val;
+            return get(t->r, k - sz(t->l) - 1);
+        }
+
+        T get(int pos){
+            return get(root, pos);
+        }
+
+        Node* update(Node* t){
+            if (!t) return t;
+            t->sz = 1 + sz(t->l)+sz(t->r);
+            t->sum = op(op(sum(t->l), t->val), sum(t->r));
+            return t;
+        }
+
+        void apply(Node* t, E f){
+            if (!t) return;
+            t->val = mapping(t->val, f, 1);
+            t->sum = mapping(t->sum, f, t->sz);
+            t->lazy = composition(t->lazy, f);
+        }
+
+        void push(Node* t){
+            if (!t) return;
+            if (t->rev){
+                swap(t->l, t->r);
+                if (t->l) t->l->rev ^= 1;
+                if (t->r) t->r->rev ^= 1;
+                t->rev = false;
+            }
+            if (t->lazy != id()){
+                apply(t->l, t->lazy);
+                apply(t->r, t->lazy);
+                t->lazy = id();
+            }
+        }
+
+        pair<Node*, Node*> split(Node* t, int k){
+            if (!t) return {nullptr, nullptr};
+            push(t);
+            if (k <= sz(t->l)){
+                auto [l, r] = split(t->l, k);
+                t->l = r;
+                return {l, update(t)};
+            }
+            else{
+                auto [l, r] = split(t->r, k - sz(t->l)-1);
+                t->r = l;
+                return {update(t), r};
+            }
+        }
+
+        Node* merge(Node* l, Node* r){
+            if (!l || !r) return l? l: r;
+            if (l->pri > r->pri){
+                push(l);
+                l->r = merge(l->r, r);
+                return update(l);
+            }
+            else{
+                push(r);
+                r->l = merge(l, r->l);
+                return update(r);
+            }
+        }
+
+        void insert(int pos, T v){
+            auto [a, b] = split(root, pos);
+            root = merge(merge(a, new_node(v)), b);
+        }
+
+        void erase(int pos){
+            auto [a, b] = split(root, pos);
+            auto [c, d] = split(b, 1);
+            root = merge(a, d);
+        }
+
+        void reverse(int l, int r){
+            auto [a, b] = split(root, l);
+            auto [c, d] = split(b, r-l);
+            if (c) c->rev ^= 1;
+            root = merge(a, merge(c, d));
+        }
+
+        void apply(int l, int r, E f){
+            auto [a, b] = split(root, l);
+            auto [c, d] = split(b, r-l);
+            apply(c, f);
+            root = merge(a, merge(c, d));
+        }
+
+        T query(int l, int r){
+            auto [a, b] = split(root, l);
+            auto [c, d] = split(b, r-l);
+            T res = sum(c);
+            root = merge(a, merge(c, d));
+            return res;
+        }
+    };
+
     class trietree{
     public:
         static const int SIGMA = 256;
@@ -1287,25 +1751,64 @@ namespace tree{
 }
 
 namespace num{
+    ll modmul(ll a, ll b, ll mod){
+        return (__int128_t)a*b%mod;
+    }
+
 	ll modpow(ll a, ll e, ll mod = MOD){
 		if (e == 0) return 1;
 		ll res = 1;
 		while (e){
-			if (e&1) res = res*a%mod;
-			a = a*a%mod;
+			if (e&1) res = modmul(res, a, mod);
+			a = modmul(a, a, mod);
 			e >>= 1;
 		}
 		return res;
 	}
+
+    bool isprime(ll n){
+        if (n < 2) return false;
+        vector<ull> small = {2ull, 3ull, 5ull, 7ull, 11ull, 13ull, 17ull, 19ull, 23ull, 29ull};
+        vector<ull> large = {2ull, 325ull, 9375ull, 28178ull, 450775ull, 9780504ull, 1795265022ull};
+        for (ull i : small) if (n%i == 0) return n == i;
+        ull d = n-1;
+        int s = 0;
+        while ((d&1) == 0) d >>= 1, s++;
+        for (ull i : large){
+            if (i%n == 0) continue;
+    ull x = modpow(i, d, n);
+            if (x == 1 || x == n-1) continue;
+            bool comp = true;
+            for (int j = 1; j < s; j++){
+                x = (__uint128_t)x*x%n;
+                if (x == n-1){
+                    comp = false;
+                    break;
+                }
+            }
+            if (comp) return false;
+        }
+        return true;
+    }
 
     ll extgcd(ll a, ll b, ll& x, ll& y){
         if (b == 0){
             x = 1, y = 0;
             return a;
         }
-        ll d = extgcd(b, a%b, y, x);
-        y -= a/b*x;
+        ll x1, y1;
+        ll d = extgcd(b, a%b, x1, y1);
+        x = y1;
+        y = x1-(a/b)*y1;
         return d;
+    }
+
+    ll modinv(ll a, ll mod){
+        ll x, y;
+        extgcd(a, mod, x, y);
+        x %= mod;
+        if (x < 0) x += mod;
+        return x;
     }
 
     template<typename T> ll tentousuu(vector<T>& A){
@@ -1318,18 +1821,6 @@ namespace num{
             F.add(Z[i], 1);
         }
         return res;
-    }
-
-    vector<bool> make_isprime(int N){
-        vector<bool> isprime(N+1, true);
-        isprime[0] = false, isprime[1] = false;
-        for (int i = 2; i*i <= N; i++){
-            if (!isprime[i]) continue;
-            for (int j = i*i; j <= N; j += i){
-                isprime[j] = false;
-            }
-        }
-        return isprime;
     }
 
 	template<typename T> map<T, T> prime_factor(T N){
@@ -1830,6 +2321,74 @@ namespace matrix{
         }
     };
 
+    template<typename T> class minplus_matrix{
+    private:
+        using mat = vector<vector<T>>;
+    public:
+        T inf = numeric_limits<T>::max()/2;
+        int sz;
+        mat A;
+        explicit minplus_matrix(int sz, T val = numeric_limits<T>::max()/2) : sz(sz), A(sz, vector<T>(sz, val)) {}
+
+        vector<T>& operator[] (int i){
+            return A[i];
+        }
+
+        const vector<T>& operator[] (int i) const{
+            return A[i];
+        }
+
+        int size() const{
+            return sz;
+        }
+
+        static minplus_matrix identity(int n){
+            minplus_matrix I(n);
+            for (int i = 0; i < n; i++) I[i][i] = 0;
+            return I;
+        }
+
+        friend istream& operator >> (istream& is, minplus_matrix& M){
+            for(int i = 0; i < M.size(); i++){
+                for(int j = 0; j < M.size(); j++){
+                    is >> M[i][j];
+                }
+            }
+            return is;
+        }
+
+        minplus_matrix operator * (const minplus_matrix& B) const{
+            assert(sz == B.sz);
+            minplus_matrix C(sz);
+            for (int i = 0; i < sz; i++){
+                for (int k = 0; k < sz; k++){
+                    for (int j = 0; j < sz; j++){
+                        if (A[i][k] == inf || B[k][j] == inf) continue;
+                        C[i][j] = min(C[i][j], A[i][k]+B[k][j]);
+                    }
+                }
+            }
+            return C;
+        }
+
+        minplus_matrix& operator *= (const minplus_matrix& B){
+            assert(sz == B.sz);
+            *this = (*this) *B;
+            return *this;
+        }
+
+        minplus_matrix pow(long long n) const{
+            minplus_matrix base = *this;
+            minplus_matrix R = identity(sz);
+            while (n > 0){
+                if (n&1) R = R * base;
+                base = base * base;
+                n >>= 1;
+            }
+            return R;
+        }
+    };
+
     template<typename T> class sparsetable{
     private:
         vector<vector<T>> st;
@@ -1855,6 +2414,48 @@ namespace matrix{
         T prod(int l, int r){
             int j = log[r-l+1];
             return op(st[l][j], st[r-(1<<j)+1][j]);
+        }
+    };
+
+    template<typename T> struct dst{
+        int N, K;
+        vector<T> A;
+        vector<vector<T>> table;
+        vector<int> log_table;
+        function<T(T, T)> op;
+        T e;
+
+        dst(const vector<T>& v, T e, function<T(T, T)> op) : A(v), op(op), e(e){
+            N = A.size(), K = 0;
+            while ((1<<K) < N) K++;
+            table.assign(K, vector<T>(N));
+            for (int k = 0; k < K; k++){
+                table[k] = A;
+                int w = 1<<k;
+                for (int a = 0; a < N; a += 2*w){
+                    int mid = min(a+w, N);
+                    int b = min(a+2*w, N);
+                    if (mid-1 >= a){
+                        table[k][mid-1] = A[mid-1];
+                        for (int i = mid-2; i >= a; i--) table[k][i] = op(A[i], table[k][i+1]);
+                    }
+                    if (mid < b){
+                        table[k][mid] = A[mid];
+                        for (int i = mid+1; i < b; i++) table[k][i] = op(table[k][i-1], A[i]);
+                    }
+                }
+            }
+            log_table.resize(1<<K);
+            for (int k = 0; k < K; k++){
+                for (int i = (1<<k); i < (1<<(k+1)); i++) log_table[i] = k;
+            }
+        }
+
+        T prod(int l, int r){
+            if (l >= r) return e;
+            if (l+1 == r) return A[l];
+            int k = log_table[l^(r-1)];
+            return op(table[k][l], table[k][r-1]);
         }
     };
 
@@ -1951,6 +2552,12 @@ namespace matrix{
 }
 
 namespace strings{
+    bool iskaibun(string s){
+        string t = s;
+        reverse(t.begin(), t.end());
+        return s == t;
+    }
+
     vector<int> z_algorithm(const string& S){
         int N = S.size();
         vector<int> Z(N);
@@ -2096,19 +2703,179 @@ namespace strings{
     };
 }
 
+namespace arrays{
+    class zobristrange{
+    private:
+        int N;
+        vector<ull> w1, w2;
+        vector<ull> HA1, HA2, HB1, HB2;
+        vector<ull> SA, SB;
+
+    public:
+        zobristrange(int n) : N(n), w1(n+1), w2(n+1), HA1(n+1), HA2(n+1), HB1(n+1), HB2(n+1), SA(n+1), SB(n+1) {
+            for (int i = 1; i <= N; i++){
+                w1[i] = rng();
+                w2[i] = rng();
+            }
+        }
+
+        void build(const vector<int>& A, const vector<int>& B){
+            for(int i = 1; i <= N; i++){
+                HA1[i] = HA1[i-1]^w1[A[i]];
+                HA2[i] = HA2[i-1]^w2[A[i]];
+                HB1[i] = HB1[i-1]^w1[B[i]];
+                HB2[i] = HB2[i-1]^w2[B[i]];
+                SA[i] = SA[i-1]+w1[A[i]];
+                SB[i] = SB[i-1]+w1[B[i]];
+            }
+        }
+
+        bool same(int l, int r, int L, int R){
+            ull a1 = HA1[r]^HA1[l-1];
+            ull a2 = HA2[r]^HA2[l-1];
+            ull b1 = HB1[R]^HB1[L-1];
+            ull b2 = HB2[R]^HB2[L-1];
+            ull sa = SA[r]-SA[l-1];
+            ull sb = SB[R]-SB[L-1];
+            return (a1 == b1 && a2 == b2 && sa == sb);
+        }
+    };
+
+    template<typename T> class rollinghash{
+    private:
+        const ll mod = 1000000007;
+        const ll BASE = 100;
+        vector<ll> hash;
+        vector<ll> power;
+
+    public:
+        rollinghash(const vector<T>& S){
+            int N = S.size();
+            hash.resize(N+1);
+            power.resize(N+1);
+            power[0] = 1;
+            for (int i = 0; i < N; i++) power[i+1] = (power[i]*BASE)%mod;
+            hash[0] = 0;
+            for (int i = 0; i < N; i++) hash[i+1] = (hash[i]*BASE+S[i])%mod;
+        }
+
+        ll get(int l, int r){
+            ll res = hash[r]-(hash[l]*power[r-l])%mod;
+            if (res < 0) res += mod;
+            return res;
+        }
+    };
+
+    template <class T> class suffixarray{
+    public:
+        vector<T> s;
+        vector<int> sa, lcp;
+
+        suffixarray(const vector<T>& str){
+            s = str;
+            build_sa();
+            build_lcp();
+        }
+
+    private:
+        void build_sa(){
+            int n = s.size();
+            sa.resize(n);
+            vector<int> rnk(n), tmp(n);
+            vector<T> xs = s;
+            sort(xs.begin(), xs.end());
+            xs.erase(unique(xs.begin(), xs.end()), xs.end());
+            for (int i = 0; i < n; i++){
+                sa[i] = i;
+                rnk[i] = lower_bound(xs.begin(), xs.end(), s[i]) - xs.begin();
+            }
+            for (int k = 1; k < n; k <<= 1){
+                auto cmp = [&](int i, int j){
+                    if (rnk[i] != rnk[j]) return rnk[i] < rnk[j];
+                    int ri = (i+k < n? rnk[i+k]: -1);
+                    int rj = (j+k < n? rnk[j+k]: -1);
+                    return ri < rj;
+                };
+                sort(sa.begin(), sa.end(), cmp);
+                tmp[sa[0]] = 0;
+                for (int i = 1; i < n; i++){
+                    tmp[sa[i]] = tmp[sa[i-1]] + cmp(sa[i-1], sa[i]);
+                }
+                for (int i = 0; i < n; i++) rnk[i] = tmp[i];
+                if (rnk[sa[n-1]] == n-1) break;
+            }
+        }
+
+        void build_lcp(){
+            int n = s.size();
+            if (n > 1) lcp.resize(n - 1);
+            vector<int> rnk(n);
+            for (int i = 0; i < n; i++) rnk[sa[i]] = i;
+            int h = 0;
+            for (int i = 0; i < n; i++){
+                if (rnk[i] == 0) continue;
+                int j = sa[rnk[i]-1];
+                if (h > 0) h--;
+                while (i+h < n && j+h < n && s[i+h] == s[j+h]) h++;
+                lcp[rnk[i]-1] = h;
+            }
+        }
+
+    public:
+        int cmp_substr(int pos, const vector<T>& t){
+            int n = s.size(), m = t.size();
+            for (int i = 0; i < m; i++){
+                if (pos+i >= n) return -1;
+                if (s[pos+i] != t[i]) return (s[pos+i] < t[i])? -1: 1;
+            }
+            return 0;
+        }
+
+        bool contains(const vector<T>& t){
+            return count(t) > 0;
+        }
+
+        int lower_bound(const vector<T>& t){
+            int left = 0, right = s.size();
+            while (left < right){
+                int mid = (left+right)/2;
+                if (cmp_substr(sa[mid], t) < 0) left = mid+1;
+                else right = mid;
+            }
+            return left;
+        }
+
+        int upper_bound(const vector<T>& t){
+            int left = 0, right = s.size();
+            while (left < right){
+                int mid = (left+right)/2;
+                if (cmp_substr(sa[mid], t) <= 0) left = mid+1;
+                else right = mid;
+            }
+            return left;
+        }
+
+        int count(const vector<T>& t){
+            return upper_bound(t)-lower_bound(t);
+        }
+    };
+}
+
 using amint = atcoder::static_modint<MOD>;
 using mint = num::modint<MOD>;
 using num::modpow;
+using num::isprime;
 template<typename T> using fenwicktree = tree::fenwicktree<T>;
+template<typename T> using lazy_fenwicktree = tree::lazy_fenwicktree<T>;
 template<typename T> using segtree = tree::segtree<T>;
 template<typename T> using segatree = tree::segtree<T>;
 template<typename T, typename U> using lazy_segtree = tree::lazy_segtree<T, U>;
 template<typename T, typename U> using lazy_segatree = tree::lazy_segtree<T, U>;
+template<typename T, typename U> using godtree = tree::godtree<T, U>;
 
 void solve();
 int main(){
-    ios::sync_with_stdio(false);
-    cin.tie(nullptr);
+    cin.tie(0)->sync_with_stdio(0);
     cout << fixed << setprecision(20);
     // testcases = 1;
     // cin >> testcases;
