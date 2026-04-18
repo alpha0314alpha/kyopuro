@@ -19,7 +19,7 @@ public:
         G[v].push_back({u, (int)G[u].size()-1, 0, -cost});
     }
 
-    pair<T, C> min_cost_flow(int s, int t, T maxf){
+    pair<T, C> flow(int s, int t, T maxf){
         const C inf = numeric_limits<C>::max()/4;
         T flow = 0;
         C cost = 0;
