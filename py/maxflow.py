@@ -47,7 +47,7 @@ class maxflow:
                     return d
         return 0
 
-    def max_flow(self, s, t):
+    def flow(self, s, t):
         flow = 0
         INF = float('inf')
         while self.bfs(s, t):
