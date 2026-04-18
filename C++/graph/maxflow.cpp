@@ -53,7 +53,7 @@ public:
         return 0;
     }
 
-    T max_flow(int s, int t){
+    T flow(int s, int t){
         T flow = 0;
         T inf = numeric_limits<T>::max();
 
