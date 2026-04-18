@@ -12,8 +12,8 @@ int testcases = 1;
 #pragma GCC optimize("O3")
 #pragma GCC optimize("unroll-loops")
 
-#define MOD 1000000007ll
-// #define MOD 998244353ll
+// #define MOD 1000000007ll
+#define MOD 998244353ll
 // #define MOD 10007ll
 #define INF (long long)4e18
 #define EPS 1e-14
@@ -195,7 +195,7 @@ vector<int> zaatu(const string& A){
 	return res;
 }
 
-template<typename T> vector<int> zaatu(const vector<T>& A){
+template<typename T> vector<int> zaatu32(const vector<T>& A){
 	int N = (int)A.size();
 	vector<T> B = A;
 	sort(B.begin(), B.end());
@@ -207,6 +207,17 @@ template<typename T> vector<int> zaatu(const vector<T>& A){
 	return res;
 }
 
+template<typename T> vector<ll> zaatu(const vector<T>& A){
+	int N = (int)A.size();
+	vector<T> B = A;
+	sort(B.begin(), B.end());
+	B.erase(unique(B.begin(), B.end()), B.end());
+	vector<ll> res(N);
+	for (int i = 0; i < N; i++){
+		res[i] = lower_bound(B.begin(), B.end(), A[i])-B.begin();
+	}
+	return res;
+}
 
 class mos{
 private:
@@ -218,7 +229,7 @@ private:
 public:
 
     mos(int n) : n(n){
-        block = sqrt(n);
+        block = max(1, (int)sqrt(n));
     }
 
     void add_query(int l, int r){
@@ -436,584 +447,6 @@ public:
         return s;
     }
 };
-
-namespace graph{
-    template<typename S, typename T> vector<T> dijkstra(const vector<vector<pair<S, T>>>& G, int root){
-        vector<T> dist(G.size(), numeric_limits<T>::max());
-        pqg<pair<T, int>> Q;
-        dist[root] = 0;
-        Q.push({0, root});
-        while (!Q.empty()){
-            auto [d, p] = Q.top();
-            Q.pop();
-            if (dist[p] < d) continue;
-            for (auto [u, v] : G[p]){
-                if (dist[u] > d+v){
-                    dist[u] = d+v;
-                    Q.push({dist[u], u});
-                }
-            }
-        }
-        for (auto &x : dist) if (x == numeric_limits<T>::max()) x = -1;
-        return dist;
-    }
-
-    template<typename T> vector<int> tpsort(const vector<vector<T>>& G){
-        int N = G.size();
-        vector<int> indeg(N, 0), res;
-        queue<int> Q;
-        for (int i = 0; i < N; i++) for (int j : G[i]) indeg[j]++;
-        for (int i = 0; i < N; i++) if (indeg[i] == 0) Q.push(i);
-        while (!Q.empty()){
-            int n = Q.front();
-            res.push_back(n);
-            Q.pop();
-            for (int j : G[n]) if (--indeg[j] == 0) Q.push(j);
-        }
-        return res;
-    }
-
-	class dsu{
-	private:
-		vector<int> parent;
-		vector<int> sz;
-	public:
-		dsu(int n){
-			parent.resize(n);
-			sz.assign(n, 1);
-			for (int i = 0; i < n; i++) parent[i] = i;
-		}
-
-		int root(int x){
-			if (parent[x] == x) return x;
-			return parent[x] = root(parent[x]);
-		}
-
-		void merge(int x, int y){
-			x = root(x);
-			y = root(y);
-			if (x == y) return;
-			if (sz[x] < sz[y]) swap(x, y);
-			parent[y] = x;
-			sz[x] += sz[y];
-            return;
-		}
-
-		bool same(int x, int y){
-			return root(x) == root(y);
-		}
-
-		int size(int x){
-			return sz[root(x)];
-		}
-	};
-
-	template<typename T> class wdsu{
-	private:
-		vector<int> parent, rankv;
-		vector<T> weight;
-	public:
-		wdsu(int n){
-			parent.resize(n);
-			rankv.assign(n, 0);
-			weight.assign(n, 0);
-			for (int i = 0; i < n; i++) parent[i] = i;
-		}
-
-		int root(int x){
-			if (parent[x] == x) return x;
-			int r = root(parent[x]);
-			weight[x] += weight[parent[x]];
-			return parent[x] = r;
-		}
-
-		T potential(int x){
-			root(x);
-			return weight[x];
-		}
-
-        bool merge(int x, int y, T w){
-            int rx = root(x), ry = root(y);
-            if (rx == ry) return diff(x, y) == w;
-            if (rankv[rx] < rankv[ry]){
-                swap(rx, ry);
-                swap(x, y);
-                w = -w;
-            }
-            parent[ry] = rx;
-            weight[ry] = weight[x]+w-weight[y];
-            if (rankv[rx] == rankv[ry]) rankv[rx]++;
-            return true;
-        }
-
-		T diff(int x, int y){
-			return potential(y)-potential(x);
-		}
-
-		bool same(int x, int y){
-			return root(x) == root(y);
-		}
-	};
-
-    class lca{
-    public:
-        int n, log;
-        vector<vector<int>> parent;
-        vector<vector<int>> graph;
-        vector<int> depth;
-
-        lca(int n) : n(n){
-            log = 1;
-            while ((1 << log) <= n) log++;
-            graph.resize(n);
-            parent.assign(n, vector<int>(log, -1));
-            depth.resize(n);
-        }
-
-        void add_edge(int u, int v){
-            graph[u].push_back(v);
-            graph[v].push_back(u);
-        }
-
-        void build(int root = 0){
-            queue<int> q;
-            q.push(root);
-            parent[root][0] = -1;
-            depth[root] = 0;
-            while (!q.empty()){
-                int v = q.front();
-                q.pop();
-                for (int nv : graph[v]){
-                    if (nv == parent[v][0]) continue;
-                    parent[nv][0] = v;
-                    depth[nv] = depth[v]+1;
-                    q.push(nv);
-                }
-            }
-            for (int k = 1; k < log; k++){
-                for (int v = 0; v < n; v++){
-                    if (parent[v][k-1] < 0){
-                        parent[v][k] = -1;
-                    }
-                    else{
-                        parent[v][k] = parent[parent[v][k-1]][k-1];
-                    }
-                }
-            }
-        }
-
-        int lca_query(int u, int v){
-            if (depth[u] < depth[v]) swap(u, v);
-            int diff = depth[u]-depth[v];
-            for (int k = 0; k < log; k++){
-                if (diff & (1 << k)){
-                    if (u == -1) break;
-                    u = parent[u][k];
-                }
-            }
-            if (u == v) return u;
-            for (int k = log-1; k >= 0; k--){
-                if (parent[u][k] != parent[v][k]){
-                    u = parent[u][k];
-                    v = parent[v][k];
-                }
-            }
-            return parent[u][0];
-        }
-
-        int dist(int u, int v){
-            int w = lca_query(u, v);
-            return depth[u]+depth[v]-2*depth[w];
-        }
-    };
-
-    class twosat{
-    private:
-    public:
-        int N;
-        vector<vector<int>> G, rG;
-        vector<int> comp, order, used;
-        vector<bool> answer;
-
-        twosat(int n) : N(n){
-            G.resize(2*n);
-        }
-
-        int var(int i, bool f){
-            return 2*i+(f? 1: 0);
-        }
-
-        void add_implication(int u, int v){
-            G[u].push_back(v);
-        }
-
-        void add_or(int i, bool f, int j, bool g){
-            add_implication(var(i, !f), var(j, g));
-            add_implication(var(j, !g), var(i, f));
-        }
-
-        void add_if(int i, bool f, int j, bool g){
-            add_implication(var(i, f), var(j, g));
-        }
-
-        void set_true(int i, bool f){
-            add_implication(var(i, !f), var(i, f));
-        }
-
-        void dfs1(int n){
-            used[n] = 1;
-            for (auto i : G[n]) if (!used[i]) dfs1(i);
-            order.push_back(n);
-        }
-
-        void dfs2(int n, int c){
-            comp[n] = c;
-            for (int i : rG[n]) if (comp[i] == -1) dfs2(i, c);
-        }
-
-        bool satisfiable(){
-            int n = 2*N;
-            used.assign(n, 0);
-            order.clear();
-            for (int i = 0; i < n; i++) if (!used[i]) dfs1(i);
-            rG.assign(n, {});
-            for (int i = 0; i < n; i++) for (int j : G[i]) rG[j].push_back(i);
-            comp.assign(n, -1);
-            int k = 0;
-            for (int i = n-1; i >= 0; i--) if (comp[order[i]] == -1) dfs2(order[i], k++);
-            answer.assign(N, false);
-            for (int i = 0; i < N; i++){
-                if (comp[2*i] == comp[2*i+1]) return false;
-                answer[i] = (comp[2*i] < comp[2*i+1]);
-            }
-            return true;
-        }
-
-        vector<bool> get_answer(){
-            return answer;
-        }
-    };
-
-	class scc{
-	public:
-		int N;
-		vector<vector<int>> graph;
-		vector<int> ord, low, comp;
-		vector<bool> in_stack;
-		stack<int> st;
-		int noword = 0, compcount = 0;
-
-		scc(int n) : N(n), graph(n) {}
-
-		void add_edge(int u, int v){
-			graph[u].push_back(v);
-		}
-
-		void dfs(int v){
-			noword++;
-			ord[v] = noword;
-			low[v] = noword;
-			st.push(v);
-			in_stack[v] = true;
-			for (int to : graph[v]){
-				if (ord[to] == -1){
-					dfs(to);
-					low[v] = min(low[v], low[to]);
-				}
-				else if (in_stack[to]){
-					low[v] = min(low[v], ord[to]);
-				}
-			}
-			if (ord[v] == low[v]){
-				while (true){
-					int u = st.top();
-					st.pop();
-					in_stack[u] = false;
-					comp[u] = compcount;
-					if (u == v) break;
-				}
-				compcount++;
-			}
-		}
-
-		int build(){
-            noword = 0, compcount = 0;
-			ord.assign(N, -1);
-			low.resize(N);
-			comp.resize(N);
-			in_stack.assign(N, false);
-			for (int i = 0; i < N; i++){
-				if (ord[i] == -1) dfs(i);
-			}
-			return compcount;
-		}
-	};
-
-    template<typename T> class rerooting{
-    private:
-        int V;
-        vector<vector<int>> G;
-        vector<vector<T>> dp;
-        function<T(T, int)> f, g;
-        function<T(T, T)> merge;
-        T id;
-    public:
-        rerooting(){}
-        rerooting(int V, function<T(T, int)> f, function<T(T, T)> merge, T id, function<T(T, int)> g) : V(V), f(f), merge(merge), id(id), g(g){
-            G.resize(V);
-            dp.resize(V);
-        }
-
-        void add_edge(int u, int v){
-            G[u].push_back(v);
-            G[v].push_back(u);
-        }
-
-        T dfs1(int n, int p){
-            T res = id;
-            for (int i = 0; i < G[n].size(); i++){
-                if (G[n][i] == p) continue;
-                dp[n][i] = dfs1(G[n][i], n);
-                res = merge(res, f(dp[n][i], G[n][i]));
-            }
-            return g(res, n);
-        }
-
-        void dfs2(int n, int p, T from_par){
-            for (int i = 0; i < G[n].size(); i++){
-                if (G[n][i] == p){
-                    dp[n][i] = from_par;
-                    break;
-                }
-            }
-            vector<T> pr(G[n].size()+1);
-            pr[G[n].size()] = id;
-            for (int i = G[n].size(); i > 0; i--){
-                pr[i-1] = merge(pr[i], f(dp[n][i-1], G[n][i-1]));
-            }
-            T pl = id;
-            for (int i = 0; i < G[n].size(); i++){
-                if (G[n][i] != p){
-                    T val = merge(pl, pr[i+1]);
-                    dfs2(G[n][i], n, g(val, n));
-                }
-                pl = merge(pl, f(dp[n][i], G[n][i]));
-            }
-        }
-
-        void build(int root = 0){
-            for (int i = 0; i < V; i++) dp[i].resize(G[i].size());
-            dfs1(root, -1);
-            dfs2(root, -1, id);
-        }
-
-        T solve(int n){
-            T ans = id;
-            for (int i = 0; i < G[n].size(); i++){
-                ans = merge(ans, f(dp[n][i], G[n][i]));
-            }
-            return g(ans, n);
-        }
-    };
-	
-    template<typename T = long long> class maxflow{
-        struct edge{
-            int to;
-            T cap;
-            int rev;
-        };
-
-        int N;
-        vector<int> level, it;
-
-    public:
-        vector<vector<edge>> G;
-
-        maxflow(int n) : N(n), G(n), level(n), it(n) {}
-
-        void add_edge(int u, int v, T cap){
-            edge a = {v, cap, (int)G[v].size()};
-            edge b = {u, 0, (int)G[u].size()};
-            G[u].push_back(a);
-            G[v].push_back(b);
-        }
-
-        bool bfs(int s, int t){
-            fill(level.begin(), level.end(), -1);
-            queue<int> q;
-            level[s] = 0;
-            q.push(s);
-
-            while(!q.empty()){
-                int v = q.front(); q.pop();
-                for(auto &e : G[v]){
-                    if(e.cap > 0 && level[e.to] < 0){
-                        level[e.to] = level[v] + 1;
-                        q.push(e.to);
-                    }
-                }
-            }
-            return level[t] >= 0;
-        }
-
-        T dfs(int v, int t, T f){
-            if(v == t) return f;
-            for(int &i = it[v]; i < (int)G[v].size(); i++){
-                edge &e = G[v][i];
-                if(e.cap > 0 && level[v] < level[e.to]){
-                    T d = dfs(e.to, t, min(f, e.cap));
-                    if(d > 0){
-                        e.cap -= d;
-                        G[e.to][e.rev].cap += d;
-                        return d;
-                    }
-                }
-            }
-            return 0;
-        }
-
-        T max_flow(int s, int t){
-            T flow = 0;
-            T inf = numeric_limits<T>::max();
-
-            while(bfs(s, t)){
-                fill(it.begin(), it.end(), 0);
-                T f;
-                while((f = dfs(s, t, inf)) > 0){
-                    flow += f;
-                }
-            }
-            return flow;
-        }
-    };
-
-    template<typename T, typename C> class mincostflow{
-    private:
-        struct edge{
-            int to, rev;
-            T cap;
-            C cost;
-        };
-
-    public:
-        int N;
-        vector<vector<edge>> G;
-        vector<C> dist, h;
-        vector<int> prevv, preve;
-
-        mincostflow(int n) : N(n), G(n), dist(n), prevv(n), preve(n), h(N, 0) {}
-
-        void add_edge(int u, int v, T cap, C cost){
-            G[u].push_back({v, (int)G[v].size(), cap, cost});
-            G[v].push_back({u, (int)G[u].size()-1, 0, -cost});
-        }
-
-        pair<T, C> min_cost_flow(int s, int t, T maxf){
-            const C inf = numeric_limits<C>::max()/4;
-            T flow = 0;
-            C cost = 0;
-            while (maxf > 0){
-                priority_queue<pair<C,int>, vector<pair<C,int>>, greater<>> pq;
-                fill(dist.begin(), dist.end(), inf);
-                dist[s] = 0;
-                pq.push({0, s});
-                while (!pq.empty()){
-                    auto [d, v] = pq.top();
-                    pq.pop();
-                    if (dist[v] < d) continue;
-                    for (int i = 0; i < G[v].size(); i++){
-                        auto &e = G[v][i];
-                        if (e.cap > 0){
-                            C nd = d+e.cost+h[v]-h[e.to];
-                            if (dist[e.to] > nd){
-                                dist[e.to] = nd;
-                                prevv[e.to] = v;
-                                preve[e.to] = i;
-                                pq.push({nd, e.to});
-                            }
-                        }
-                    }
-                }
-                if (dist[t] == inf) break;
-                for (int i = 0; i < N; i++) h[i] += dist[i];
-                T d = maxf;
-                for (int i = t; i != s; i = prevv[i]) d = min(d, G[prevv[i]][preve[i]].cap);
-                maxf -= d;
-                flow += d;
-                cost += d*h[t];
-
-                for (int i = t; i != s; i = prevv[i]){
-                    auto &e = G[prevv[i]][preve[i]];
-                    e.cap -= d;
-                    G[i][e.rev].cap += d;
-                }
-            }
-            return {flow, cost};
-        }
-    };
-
-    class hld{
-    private:
-    public:
-        int N, cur;
-        vector<vector<int>> G;
-        vector<int> parent, depth, heavy, head, pos, sz;
-
-        hld(int n) : N(n), G(n), parent(n), depth(n), heavy(n, -1), head(n), pos(n), sz(n) {}
-
-        void add_edge(int u, int v){
-            G[u].push_back(v);
-            G[v].push_back(u);
-        }
-
-        int dfs(int n, int p){
-            parent[n] = p;
-            sz[n] = 1;
-            int maxsz = 0;
-            for (int i : G[n]) if (i != p){
-                depth[i] = depth[n]+1;
-                int sub = dfs(i, n);
-                sz[n] += sub;
-                if (sub > maxsz){
-                    maxsz = sub;
-                    heavy[n] = i;
-                }
-            }
-            return sz[n];
-        }
-
-        void decompose(int n, int h){
-            head[n] = h, pos[n] = cur++;
-            if (heavy[n] != -1) decompose(heavy[n], h);
-            for (int to : G[n]) if (to != parent[n] && to != heavy[n]) decompose(to, to);
-        }
-
-        void build(int root = 0){
-            cur = 0;
-            depth[root] = 0;
-            dfs(root, -1);
-            decompose(root, root);
-        }
-
-        template<class F> void query(int u, int v, const F& f){
-            while (head[u] != head[v]){
-                if (depth[head[u]] < depth[head[v]]) swap(u, v);
-                f(pos[head[u]], pos[u]);
-                u = parent[head[u]];
-            }
-            if (depth[u] > depth[v]) swap(u, v);
-            f(pos[u], pos[v]);
-        }
-
-        int lca(int u, int v){
-            while (head[u] != head[v]){
-                if (depth[head[u]] < depth[head[v]]) swap(u, v);
-                u = parent[head[u]];
-            }
-            return depth[u] < depth[v]? u: v;
-        }
-    };
-}
 
 namespace tree{
 	template<typename T> class fenwicktree{
@@ -1281,6 +714,90 @@ namespace tree{
                 st.emplace(node->r, mid, r);
             }
             return res;
+        }
+    };
+
+    template<typename T> struct persistent_segtree{
+    private:
+        struct node{
+            T val;
+            node *l, *r;
+            node(T v, node* l = nullptr, node* r = nullptr) : val(v), l(l), r(r) {}
+        };
+
+        int n;
+        T e;
+        function<T(T, T)> op;
+        vector<node*> roots;
+        node* build(int l, int r, const vector<T>& A){
+            if (l+1 == r){
+                if (l < (int)A.size()) return new node(A[l]);
+                return new node(e);
+            }
+            int m = (l+r)/2;
+            node* left = build(l, m, A);
+            node* right = build(m, r, A);
+            return new node(op(left->val, right->val), left, right);
+        }
+
+        node* update(node* cur, int l, int r, int idx, T val){
+            if (l+1 == r) return new node(val);
+            int m = (l+r)/2;
+            if (idx < m){
+                node* nl = update(cur->l, l, m, idx, val);
+                return new node(op(nl->val, cur->r->val), nl, cur->r);
+            }
+            else{
+                node* nr = update(cur->r, m, r, idx, val);
+                return new node(op(cur->l->val, nr->val), cur->l, nr);
+            }
+        }
+
+        T query(node* node, int l, int r, int ql, int qr){
+            if (qr <= l || r <= ql) return e;
+            if (ql <= l && r <= qr) return node->val;
+            int m = (l+r)/2;
+            return op(query(node->l, l, m, ql, qr), query(node->r, m, r, ql, qr));
+        }
+
+        T get_val(node* node, int l, int r, int idx){
+            if (l+1 == r) return node->val;
+            int m = (l+r)>>1;
+            if (idx < m) return get_val(node->l, l, m, idx);
+            else return get_val(node->r, m, r, idx);
+        }
+    public:
+
+        persistent_segtree(const vector<T>& A, T id, function<T(T,T)> op) : n(A.size()), e(id), op(op){
+            roots.push_back(build(0, n, A));
+        }
+
+        persistent_segtree(int sz, T id, function<T(T,T)> op) : n(sz), e(id), op(op){
+            vector<T> A;
+            roots.push_back(build(0, n, A));
+        }
+
+        int set(int v, int i, T val){
+            node* newRoot = update(roots[v], 0, n, i, val);
+            roots.push_back(newRoot);
+            return (int)roots.size()-1;
+        }
+
+        int add(int v, int i, T val){
+            T cur = get_val(roots[v], 0, n, i);
+            return set(v, i, cur+val);
+        }
+
+        T prod(int v, int l, int r){
+            return query(roots[v], 0, n, l, r);
+        }
+
+        T get(int v, int i){
+            return get_val(roots[v], 0, n, i);
+        }
+
+        int versions() const{
+            return roots.size();
         }
     };
 
@@ -1616,6 +1133,702 @@ namespace tree{
     };
 }
 
+namespace graph{
+    template<typename S, typename T> vector<T> dijkstra(const vector<vector<pair<S, T>>>& G, int root){
+        vector<T> dist(G.size(), numeric_limits<T>::max());
+        pqg<pair<T, int>> Q;
+        dist[root] = 0;
+        Q.push({0, root});
+        while (!Q.empty()){
+            auto [d, p] = Q.top();
+            Q.pop();
+            if (dist[p] < d) continue;
+            for (auto [u, v] : G[p]){
+                if (dist[u] > d+v){
+                    dist[u] = d+v;
+                    Q.push({dist[u], u});
+                }
+            }
+        }
+        for (auto &x : dist) if (x == numeric_limits<T>::max()) x = -1;
+        return dist;
+    }
+
+    template<typename T> vector<int> tpsort(const vector<vector<T>>& G){
+        int N = G.size();
+        vector<int> indeg(N, 0), res;
+        queue<int> Q;
+        for (int i = 0; i < N; i++) for (int j : G[i]) indeg[j]++;
+        for (int i = 0; i < N; i++) if (indeg[i] == 0) Q.push(i);
+        while (!Q.empty()){
+            int n = Q.front();
+            res.push_back(n);
+            Q.pop();
+            for (int j : G[n]) if (--indeg[j] == 0) Q.push(j);
+        }
+        return res;
+    }
+
+	struct dsu{
+		vector<int> parent;
+		vector<int> sz;
+
+		dsu(int n){
+			parent.resize(n);
+			sz.assign(n, 1);
+			for (int i = 0; i < n; i++) parent[i] = i;
+		}
+
+		int root(int x){
+			if (parent[x] == x) return x;
+			return parent[x] = root(parent[x]);
+		}
+
+		void merge(int x, int y){
+			x = root(x);
+			y = root(y);
+			if (x == y) return;
+			if (sz[x] < sz[y]) swap(x, y);
+			parent[y] = x;
+			sz[x] += sz[y];
+            return;
+		}
+
+		bool same(int x, int y){
+			return root(x) == root(y);
+		}
+
+		int size(int x){
+			return sz[root(x)];
+		}
+	};
+
+	template<typename T> class wdsu{
+	private:
+		vector<int> parent, rankv;
+		vector<T> weight;
+	public:
+		wdsu(int n){
+			parent.resize(n);
+			rankv.assign(n, 0);
+			weight.assign(n, 0);
+			for (int i = 0; i < n; i++) parent[i] = i;
+		}
+
+		int root(int x){
+			if (parent[x] == x) return x;
+			int r = root(parent[x]);
+			weight[x] += weight[parent[x]];
+			return parent[x] = r;
+		}
+
+		T potential(int x){
+			root(x);
+			return weight[x];
+		}
+
+        bool merge(int x, int y, T w){
+            int rx = root(x), ry = root(y);
+            if (rx == ry) return diff(x, y) == w;
+            if (rankv[rx] < rankv[ry]){
+                swap(rx, ry);
+                swap(x, y);
+                w = -w;
+            }
+            parent[ry] = rx;
+            weight[ry] = weight[x]+w-weight[y];
+            if (rankv[rx] == rankv[ry]) rankv[rx]++;
+            return true;
+        }
+
+		T diff(int x, int y){
+			return potential(y)-potential(x);
+		}
+
+		bool same(int x, int y){
+			return root(x) == root(y);
+		}
+	};
+
+    struct persistent_dsu{
+        tree::persistent_segtree<int> seg;
+        int n;
+
+        persistent_dsu(int n) : seg(n, -1, [](int a, int b){ return 0; }), n(n) {}
+
+        int root(int v, int x){
+            while (true){
+                int p = seg.get(v, x);
+                if (p < 0) return x;
+                x = p;
+            }
+        }
+
+        int merge(int v, int a, int b){
+            a = root(v, a);
+            b = root(v, b);
+            if (a == b) return v;
+            int sa = -seg.get(v, a);
+            int sb = -seg.get(v, b);
+            if (sa < sb) swap(a, b);
+            int nv = seg.set(v, a, -(sa + sb));
+            nv = seg.set(nv, b, a);
+            return nv;
+        }
+
+        bool same(int v, int a, int b){
+            return root(v, a) == root(v, b);
+        }
+
+        int size(int v, int x){
+            x = root(v, x);
+            return -seg.get(v, x);
+        }
+    };
+
+    class lca{
+    public:
+        int n, log;
+        vector<vector<int>> parent;
+        vector<vector<int>> graph;
+        vector<int> depth;
+
+        lca(int n) : n(n){
+            log = 1;
+            while ((1 << log) <= n) log++;
+            graph.resize(n);
+            parent.assign(n, vector<int>(log, -1));
+            depth.resize(n);
+        }
+
+        void add_edge(int u, int v){
+            graph[u].push_back(v);
+            graph[v].push_back(u);
+        }
+
+        void build(int root = 0){
+            queue<int> q;
+            q.push(root);
+            parent[root][0] = -1;
+            depth[root] = 0;
+            while (!q.empty()){
+                int v = q.front();
+                q.pop();
+                for (int nv : graph[v]){
+                    if (nv == parent[v][0]) continue;
+                    parent[nv][0] = v;
+                    depth[nv] = depth[v]+1;
+                    q.push(nv);
+                }
+            }
+            for (int k = 1; k < log; k++){
+                for (int v = 0; v < n; v++){
+                    if (parent[v][k-1] < 0){
+                        parent[v][k] = -1;
+                    }
+                    else{
+                        parent[v][k] = parent[parent[v][k-1]][k-1];
+                    }
+                }
+            }
+        }
+
+        int lca_query(int u, int v){
+            if (depth[u] < depth[v]) swap(u, v);
+            int diff = depth[u]-depth[v];
+            for (int k = 0; k < log; k++){
+                if (diff & (1 << k)){
+                    if (u == -1) break;
+                    u = parent[u][k];
+                }
+            }
+            if (u == v) return u;
+            for (int k = log-1; k >= 0; k--){
+                if (parent[u][k] != parent[v][k]){
+                    u = parent[u][k];
+                    v = parent[v][k];
+                }
+            }
+            return parent[u][0];
+        }
+
+        int dist(int u, int v){
+            int w = lca_query(u, v);
+            return depth[u]+depth[v]-2*depth[w];
+        }
+    };
+
+    class twosat{
+    private:
+    public:
+        int N;
+        vector<vector<int>> G, rG;
+        vector<int> comp, order, used;
+        vector<bool> answer;
+
+        twosat(int n) : N(n){
+            G.resize(2*n);
+        }
+
+        int var(int i, bool f){
+            return 2*i+(f? 1: 0);
+        }
+
+        void add_implication(int u, int v){
+            G[u].push_back(v);
+        }
+
+        void add_or(int i, bool f, int j, bool g){
+            add_implication(var(i, !f), var(j, g));
+            add_implication(var(j, !g), var(i, f));
+        }
+
+        void add_if(int i, bool f, int j, bool g){
+            add_implication(var(i, f), var(j, g));
+        }
+
+        void set_true(int i, bool f){
+            add_implication(var(i, !f), var(i, f));
+        }
+
+        void dfs1(int n){
+            used[n] = 1;
+            for (auto i : G[n]) if (!used[i]) dfs1(i);
+            order.push_back(n);
+        }
+
+        void dfs2(int n, int c){
+            comp[n] = c;
+            for (int i : rG[n]) if (comp[i] == -1) dfs2(i, c);
+        }
+
+        bool satisfiable(){
+            int n = 2*N;
+            used.assign(n, 0);
+            order.clear();
+            for (int i = 0; i < n; i++) if (!used[i]) dfs1(i);
+            rG.assign(n, {});
+            for (int i = 0; i < n; i++) for (int j : G[i]) rG[j].push_back(i);
+            comp.assign(n, -1);
+            int k = 0;
+            for (int i = n-1; i >= 0; i--) if (comp[order[i]] == -1) dfs2(order[i], k++);
+            answer.assign(N, false);
+            for (int i = 0; i < N; i++){
+                if (comp[2*i] == comp[2*i+1]) return false;
+                answer[i] = (comp[2*i] < comp[2*i+1]);
+            }
+            return true;
+        }
+
+        vector<bool> get_answer(){
+            return answer;
+        }
+    };
+
+    struct scc{
+        int N;
+        vector<vector<int>> G, RG;
+        vector<int> comp, order;
+        vector<bool> used;
+
+        scc(int n) : N(n), G(n), RG(n), comp(n, -1), used(n, false) {}
+
+        void add_edge(int u, int v){
+            G[u].push_back(v);
+            RG[v].push_back(u);
+        }
+
+        void dfs(int n){
+            used[n] = true;
+            for (int i : G[n]) if (!used[i]) dfs(i);
+            order.push_back(n);
+        }
+
+        void rdfs(int n, int k){
+            comp[n] = k;
+            for (int i : RG[n]) if (comp[i] == -1) rdfs(i, k);
+        }
+
+        vector<vector<int>> build(){
+            for (int i = 0; i < N; i++) if (!used[i]) dfs(i);
+            reverse(order.begin(), order.end());
+            int k = 0;
+            for (int i : order) if (comp[i] == -1) rdfs(i, k++);
+            vector<vector<int>> res(k);
+            for (int i = 0; i < N; i++) res[comp[i]].push_back(i);
+            return res;
+        }
+    };
+
+    struct tecc{
+        int N;
+        vector<vector<pair<int, int>>> G;
+        vector<pair<int, int>> E;
+        vector<int> ord, low, comp;
+        vector<bool> is_bridge;
+        int timer = 0;
+
+        tecc(int n) : N(n), G(n), ord(n, -1), low(n) {}
+        
+        void add_edge(int u, int v){
+            int id = E.size();
+            E.emplace_back(u, v);
+            G[u].emplace_back(v, id);
+            G[v].emplace_back(u, id);
+        }
+
+        void dfs(int n, int p = -1){
+            ord[n] = low[n] = timer++;
+            for (auto [i, id] : G[n]) if (id != p){
+                if (ord[i] != -1) low[n] = min(low[n], ord[i]);
+                else{
+                    dfs(i, id);
+                    low[n] = min(low[n], low[i]);
+                    if (ord[n] < low[i]) is_bridge[id] = true;
+                }
+            }
+        }
+
+        vector<vector<int>> build(){
+            fill(ord.begin(), ord.end(), -1);
+            timer = 0;
+            is_bridge.assign(E.size(), false);
+            for (int i = 0; i < N; i++) if (ord[i] == -1) dfs(i);
+            dsu uf(N);
+            for (int i = 0; i < (int)E.size(); i++){
+                if (is_bridge[i]) continue;
+                auto [u, v] = E[i];
+                uf.merge(u, v);
+            }
+            comp.resize(N);
+            map<int, int> mp;
+            int idx = 0;
+            for (int i = 0; i < N; i++){
+                int r = uf.root(i);
+                if (!mp.count(r)) mp[r] = idx++;
+                comp[i] = mp[r];
+            }
+            vector<vector<int>> tree(idx);
+            for (int i = 0; i < (int)E.size(); i++){
+                if (!is_bridge[i]) continue;
+                auto [u, v] = E[i];
+                int a = comp[u], b = comp[v];
+                tree[a].push_back(b);
+                tree[b].push_back(a);
+            }
+            return tree;
+        }
+    };
+
+    template<typename T> class rerooting{
+    private:
+        int V;
+        vector<vector<int>> G;
+        vector<vector<T>> dp;
+        function<T(T, int)> f, g;
+        function<T(T, T)> merge;
+        T id;
+    public:
+        rerooting(){}
+        rerooting(int V, function<T(T, int)> f, function<T(T, T)> merge, T id, function<T(T, int)> g) : V(V), f(f), merge(merge), id(id), g(g){
+            G.resize(V);
+            dp.resize(V);
+        }
+
+        void add_edge(int u, int v){
+            G[u].push_back(v);
+            G[v].push_back(u);
+        }
+
+        T dfs1(int n, int p){
+            T res = id;
+            for (int i = 0; i < G[n].size(); i++){
+                if (G[n][i] == p) continue;
+                dp[n][i] = dfs1(G[n][i], n);
+                res = merge(res, f(dp[n][i], G[n][i]));
+            }
+            return g(res, n);
+        }
+
+        void dfs2(int n, int p, T from_par){
+            for (int i = 0; i < G[n].size(); i++){
+                if (G[n][i] == p){
+                    dp[n][i] = from_par;
+                    break;
+                }
+            }
+            vector<T> pr(G[n].size()+1);
+            pr[G[n].size()] = id;
+            for (int i = G[n].size(); i > 0; i--){
+                pr[i-1] = merge(pr[i], f(dp[n][i-1], G[n][i-1]));
+            }
+            T pl = id;
+            for (int i = 0; i < G[n].size(); i++){
+                if (G[n][i] != p){
+                    T val = merge(pl, pr[i+1]);
+                    dfs2(G[n][i], n, g(val, n));
+                }
+                pl = merge(pl, f(dp[n][i], G[n][i]));
+            }
+        }
+
+        void build(int root = 0){
+            for (int i = 0; i < V; i++) dp[i].resize(G[i].size());
+            dfs1(root, -1);
+            dfs2(root, -1, id);
+        }
+
+        T solve(int n){
+            T ans = id;
+            for (int i = 0; i < G[n].size(); i++){
+                ans = merge(ans, f(dp[n][i], G[n][i]));
+            }
+            return g(ans, n);
+        }
+    };
+	
+    template<typename T = long long> class maxflow{
+        struct edge{
+            int to;
+            T cap;
+            int rev;
+        };
+
+        int N;
+        vector<int> level, it;
+
+    public:
+        vector<vector<edge>> G;
+
+        maxflow(int n) : N(n), G(n), level(n), it(n) {}
+
+        void add_edge(int u, int v, T cap){
+            edge a = {v, cap, (int)G[v].size()};
+            edge b = {u, 0, (int)G[u].size()};
+            G[u].push_back(a);
+            G[v].push_back(b);
+        }
+
+        bool bfs(int s, int t){
+            fill(level.begin(), level.end(), -1);
+            queue<int> q;
+            level[s] = 0;
+            q.push(s);
+
+            while(!q.empty()){
+                int v = q.front(); q.pop();
+                for(auto &e : G[v]){
+                    if(e.cap > 0 && level[e.to] < 0){
+                        level[e.to] = level[v] + 1;
+                        q.push(e.to);
+                    }
+                }
+            }
+            return level[t] >= 0;
+        }
+
+        T dfs(int v, int t, T f){
+            if(v == t) return f;
+            for(int &i = it[v]; i < (int)G[v].size(); i++){
+                edge &e = G[v][i];
+                if(e.cap > 0 && level[v] < level[e.to]){
+                    T d = dfs(e.to, t, min(f, e.cap));
+                    if(d > 0){
+                        e.cap -= d;
+                        G[e.to][e.rev].cap += d;
+                        return d;
+                    }
+                }
+            }
+            return 0;
+        }
+
+        T flow(int s, int t){
+            T flow = 0;
+            T inf = numeric_limits<T>::max();
+
+            while(bfs(s, t)){
+                fill(it.begin(), it.end(), 0);
+                T f;
+                while((f = dfs(s, t, inf)) > 0){
+                    flow += f;
+                }
+            }
+            return flow;
+        }
+    };
+
+    template<typename T, typename C> class mincostflow{
+    private:
+        struct edge{
+            int to, rev;
+            T cap;
+            C cost;
+        };
+
+    public:
+        int N;
+        vector<vector<edge>> G;
+        vector<C> dist, h;
+        vector<int> prevv, preve;
+
+        mincostflow(int n) : N(n), G(n), dist(n), prevv(n), preve(n), h(N, 0) {}
+
+        void add_edge(int u, int v, T cap, C cost){
+            G[u].push_back({v, (int)G[v].size(), cap, cost});
+            G[v].push_back({u, (int)G[u].size()-1, 0, -cost});
+        }
+
+        pair<T, C> flow(int s, int t, T maxf){
+            const C inf = numeric_limits<C>::max()/4;
+            T flow = 0;
+            C cost = 0;
+            while (maxf > 0){
+                priority_queue<pair<C,int>, vector<pair<C,int>>, greater<>> pq;
+                fill(dist.begin(), dist.end(), inf);
+                dist[s] = 0;
+                pq.push({0, s});
+                while (!pq.empty()){
+                    auto [d, v] = pq.top();
+                    pq.pop();
+                    if (dist[v] < d) continue;
+                    for (int i = 0; i < G[v].size(); i++){
+                        auto &e = G[v][i];
+                        if (e.cap > 0){
+                            C nd = d+e.cost+h[v]-h[e.to];
+                            if (dist[e.to] > nd){
+                                dist[e.to] = nd;
+                                prevv[e.to] = v;
+                                preve[e.to] = i;
+                                pq.push({nd, e.to});
+                            }
+                        }
+                    }
+                }
+                if (dist[t] == inf) break;
+                for (int i = 0; i < N; i++) h[i] += dist[i];
+                T d = maxf;
+                for (int i = t; i != s; i = prevv[i]) d = min(d, G[prevv[i]][preve[i]].cap);
+                maxf -= d;
+                flow += d;
+                cost += d*h[t];
+
+                for (int i = t; i != s; i = prevv[i]){
+                    auto &e = G[prevv[i]][preve[i]];
+                    e.cap -= d;
+                    G[i][e.rev].cap += d;
+                }
+            }
+            return {flow, cost};
+        }
+    };
+
+    struct hld{
+        int N, cur;
+        vector<vector<int>> G;
+        vector<int> parent, depth, heavy, head, pos, sz;
+
+        hld(int n) : N(n), G(n), parent(n), depth(n), heavy(n, -1), head(n), pos(n), sz(n) {}
+
+        void add_edge(int u, int v){
+            G[u].push_back(v);
+            G[v].push_back(u);
+        }
+
+        int dfs(int n, int p){
+            parent[n] = p;
+            sz[n] = 1;
+            int maxsz = 0;
+            for (int i : G[n]) if (i != p){
+                depth[i] = depth[n]+1;
+                int sub = dfs(i, n);
+                sz[n] += sub;
+                if (sub > maxsz){
+                    maxsz = sub;
+                    heavy[n] = i;
+                }
+            }
+            return sz[n];
+        }
+
+        void decompose(int n, int h){
+            head[n] = h, pos[n] = cur++;
+            if (heavy[n] != -1) decompose(heavy[n], h);
+            for (int to : G[n]) if (to != parent[n] && to != heavy[n]) decompose(to, to);
+        }
+
+        void build(int root = 0){
+            cur = 0;
+            depth[root] = 0;
+            dfs(root, -1);
+            decompose(root, root);
+        }
+
+        template<class F> void query(int u, int v, const F& f){
+            while (head[u] != head[v]){
+                if (depth[head[u]] < depth[head[v]]) swap(u, v);
+                f(pos[head[u]], pos[u]);
+                u = parent[head[u]];
+            }
+            if (depth[u] > depth[v]) swap(u, v);
+            f(pos[u], pos[v]);
+        }
+
+        int lca(int u, int v){
+            while (head[u] != head[v]){
+                if (depth[head[u]] < depth[head[v]]) swap(u, v);
+                u = parent[head[u]];
+            }
+            return depth[u] < depth[v]? u: v;
+        }
+    };
+
+    struct centroid_decomposition{
+        int N;
+        vector<vector<int>> G;
+        vector<int> sz, par;
+        vector<bool> removed;
+
+        centroid_decomposition(int n) : N(n), G(N), sz(N), removed(N, false), par(N, -1){}
+
+        void add_edge(int u, int v){
+            
+    G[u].push_back(v);
+            G[v].push_back(u);
+        }
+
+        int dfs_size(int n, int p){
+            sz[n] = 1;
+            for (int i : G[n]) if (i != p && !removed[i]) sz[n] += dfs_size(i, n);
+            return sz[n];
+        }
+
+        int dfs_centroid(int n, int p, int total){
+            for (int i : G[n]) if (i != p && !removed[i]){
+                if (sz[i] > total/2){
+                    return dfs_centroid(i, n, total);
+                }
+            }
+            return n;
+        }
+
+        void build(int n, int p){
+            int total = dfs_size(n, -1);
+            int c = dfs_centroid(n, -1, total);
+            par[c] = p, removed[c] = true;
+            for (int i : G[c]) if (!removed[i]) build(i, c);
+        }
+
+        void decompose(int root = 0){
+            build(root, -1);
+        }
+
+        int get_parent(int n){
+            return par[n];
+        }
+    };
+}
+
 namespace num{
     ll modmul(ll a, ll b, ll mod){
         return (__int128_t)a*b%mod;
@@ -1625,8 +1838,8 @@ namespace num{
 		if (e == 0) return 1;
 		ll res = 1;
 		while (e){
-			if (e&1) res = modmul(res, a, mod);
-			a = modmul(a, a, mod);
+			if (e&1) res = res*a%mod;
+            a = a*a%mod;
 			e >>= 1;
 		}
 		return res;
@@ -1662,9 +1875,19 @@ namespace num{
             x = 1, y = 0;
             return a;
         }
-        ll d = extgcd(b, a%b, y, x);
-        y -= a/b*x;
+        ll x1, y1;
+        ll d = extgcd(b, a%b, x1, y1);
+        x = y1;
+        y = x1-(a/b)*y1;
         return d;
+    }
+
+    ll modinv(ll a, ll mod){
+        ll x, y;
+        extgcd(a, mod, x, y);
+        x %= mod;
+        if (x < 0) x += mod;
+        return x;
     }
 
     template<typename T> ll tentousuu(vector<T>& A){
@@ -2273,7 +2496,7 @@ namespace matrix{
         }
     };
 
-    template<typename T> struct disjointsparsetable{
+    template<typename T> struct dst{
         int N, K;
         vector<T> A;
         vector<vector<T>> table;
@@ -2281,7 +2504,7 @@ namespace matrix{
         function<T(T, T)> op;
         T e;
 
-        disjointsparsetable(const vector<T>& v, T e, function<T(T, T)> op) : A(v), op(op), e(e){
+        dst(const vector<T>& v, T e, function<T(T, T)> op) : A(v), op(op), e(e){
             N = A.size(), K = 0;
             while ((1<<K) < N) K++;
             table.assign(K, vector<T>(N));
@@ -2315,13 +2538,11 @@ namespace matrix{
         }
     };
 
-    class waveletmatrix{
-    private:
+    struct waveletmatrix{
         int n, LOG;
         vector<vector<int>> bit;
         vector<int> mid;
 
-    public:
         waveletmatrix(const vector<ll>& v, ll maxv = (1LL<<60)){
             n = v.size();
             LOG = 0;
@@ -2362,7 +2583,7 @@ namespace matrix{
             return r-l;
         }
 
-        ll kth(int l, int r, int k){
+        ll kth_min(int l, int r, int k){
             if(k < 0 || k >= r-l) return -1;
             ll res = 0;
             for (int level = LOG-1; level >= 0; level--){
@@ -2382,6 +2603,18 @@ namespace matrix{
             return res;
         }
 
+        ll min(int l, int r){
+            return kth_min(l, r, 0);
+        }
+
+        ll max(int l, int r){
+            return kth_min(l, r, r-l-1);
+        }
+
+        ll kth_max(int l, int r, int k){
+            return kth_min(l, r, r-l-1 - k);
+        }
+
         int less_than(int l, int r, ll x){
             int cnt = 0;
             for (int level = LOG-1; level >= 0; level--){
@@ -2399,6 +2632,11 @@ namespace matrix{
                 }
             }
             return cnt;
+        }
+
+        int greater_than(int l, int r, ll x){
+            if (x == LLONG_MAX) return 0;
+            return (r - l) - less_than(l, r, x+1);
         }
 
         int range_freq(int l, int r, ll a, ll b){
@@ -2594,6 +2832,31 @@ namespace arrays{
             ull sa = SA[r]-SA[l-1];
             ull sb = SB[R]-SB[L-1];
             return (a1 == b1 && a2 == b2 && sa == sb);
+        }
+    };
+
+    template<typename T> class rollinghash{
+    private:
+        const ll mod = 1000000007;
+        const ll BASE = 100;
+        vector<ll> hash;
+        vector<ll> power;
+
+    public:
+        rollinghash(const vector<T>& S){
+            int N = S.size();
+            hash.resize(N+1);
+            power.resize(N+1);
+            power[0] = 1;
+            for (int i = 0; i < N; i++) power[i+1] = (power[i]*BASE)%mod;
+            hash[0] = 0;
+            for (int i = 0; i < N; i++) hash[i+1] = (hash[i]*BASE+S[i])%mod;
+        }
+
+        ll get(int l, int r){
+            ll res = hash[r]-(hash[l]*power[r-l])%mod;
+            if (res < 0) res += mod;
+            return res;
         }
     };
 
