@@ -1,10 +1,8 @@
-class waveletmatrix{
-private:
+struct waveletmatrix{
     int n, LOG;
     vector<vector<int>> bit;
     vector<int> mid;
 
-public:
     waveletmatrix(const vector<ll>& v, ll maxv = (1LL<<60)){
         n = v.size();
         LOG = 0;
@@ -45,7 +43,7 @@ public:
         return r-l;
     }
 
-    ll kth(int l, int r, int k){
+    ll kth_min(int l, int r, int k){
         if(k < 0 || k >= r-l) return -1;
         ll res = 0;
         for (int level = LOG-1; level >= 0; level--){
@@ -65,6 +63,18 @@ public:
         return res;
     }
 
+    ll min(int l, int r){
+        return kth_min(l, r, 0);
+    }
+
+    ll max(int l, int r){
+        return kth_min(l, r, r-l-1);
+    }
+
+    ll kth_max(int l, int r, int k){
+        return kth_min(l, r, r-l-1 - k);
+    }
+
     int less_than(int l, int r, ll x){
         int cnt = 0;
         for (int level = LOG-1; level >= 0; level--){
@@ -82,6 +92,11 @@ public:
             }
         }
         return cnt;
+    }
+
+    int greater_than(int l, int r, ll x){
+        if (x == LLONG_MAX) return 0;
+        return (r - l) - less_than(l, r, x+1);
     }
 
     int range_freq(int l, int r, ll a, ll b){
