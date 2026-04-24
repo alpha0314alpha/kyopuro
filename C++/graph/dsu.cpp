@@ -1,8 +1,7 @@
-class dsu{
-private:
+struct dsu{
     vector<int> parent;
     vector<int> sz;
-public:
+
     dsu(int n){
         parent.resize(n);
         sz.assign(n, 1);
@@ -18,7 +17,6 @@ public:
         x = root(x);
         y = root(y);
         if (x == y) return;
-
         if (sz[x] < sz[y]) swap(x, y);
         parent[y] = x;
         sz[x] += sz[y];
