@@ -35,6 +35,6 @@ template<typename T> struct sim{
     }
 
     T sum(int l, int r){
-        return _sum(r-1) - _sum(l-1);
+        return _sum(r-1)-_sum(l);
     }
 };
