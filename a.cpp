@@ -8,12 +8,12 @@ int testcases = 10;
 #include <atcoder/all>
 int testcases = 1;
 #endif
-#pragma GCC target("avx2")
-#pragma GCC optimize("O3")
-#pragma GCC optimize("unroll-loops")
+// #pragma GCC target("avx2")
+// #pragma GCC optimize("O3")
+// #pragma GCC optimize("unroll-loops")
 
-// #define MOD 1000000007ll
-#define MOD 998244353ll
+#define MOD 1000000007ll
+// #define MOD 998244353ll
 // #define MOD 10007ll
 #define INF (long long)4e18
 #define EPS 1e-14
@@ -45,11 +45,13 @@ int testcases = 1;
 #define func function
 #define uniqueerase(A) A.erase(unique(A.begin(), A.end()), A.end())
 using namespace std;
-using cd = complex<long double>;
+//
+// using cd = complex<long double>;
 using ll = long long;
 using ull = unsigned long long;
 using lll = __int128;
 using ld = long double;
+using pll = pair<long long, long long>;
 template<typename T> using pq = priority_queue<T>;
 template<typename T> using pqg = priority_queue<T, vector<T>, greater<T>>;
 template<typename T> using vec = vector<T>;
@@ -61,6 +63,7 @@ template<typename T> using arr2 = array<T, 2>;
 // template<typename T> using uset = unorderd_set<T>;
 // template<typename T> using umap = unorderd_map<T>;
 template<typename T> using mset = multiset<T>;
+
 static mt19937_64 rng(chrono::steady_clock::now().time_since_epoch().count());
 const ll ROOT = (MOD == 998244353ll? 3: 5);
 const int dx[] = { 1, 0, -1, 0 };
@@ -105,7 +108,7 @@ template<typename T> void chmax(T& x, T y){
     x = max(x, y);
 }
 
-template<typename T> istream& operator >> (istream& is, deque<T>& v) {
+template<typename T> istream& operator >> (istream& is, deque<T>& v){
 	for (T& x : v) is >> x;
 	return is;
 }
@@ -118,7 +121,7 @@ template<typename T> ostream& operator << (ostream& os, const deque<T>& v){
 	return os;
 }
 
-template<typename T> istream& operator >> (istream& is, vector<T>& v) {
+template<typename T> istream& operator >> (istream& is, vector<T>& v){
 	for (T& x : v) is >> x;
 	return is;
 }
@@ -148,7 +151,7 @@ template<typename T, typename U> istream& operator >> (istream& is, deque<pair<T
 
 vector<pair<char, int>> to_rle(const string& S){
 	vector<pair<char, int>> res;
-	for (char i : S) {
+	for (char i : S){
 		if (res.empty() || res.back().first != i) res.push_back({ i, 1 });
 		else res.back().second++;
 	}
@@ -261,7 +264,7 @@ public:
     struct node{
         T l, r;
         V val;
-        node(T l, T r, V val) : l(l), r(r), val(val) {}
+        node(T l, T r, V val) : l(l), r(r), val(val){}
         bool operator < (const node& other) const{
             if (l != other.l) return l < other.l;
             return r < other.r;
@@ -272,7 +275,7 @@ public:
     };
     const V id;
     set<node> S;
-    intervalset(V id = V()) : id(id) {}
+    intervalset(V id = V()) : id(id){}
     intervalset(const vector<V>& v, V id = V()) : id(id){
         vector<node> vec;
         for (int l = 0; l < (int)v.size(); l++){
@@ -399,7 +402,7 @@ public:
         update(l, r, V(), add, del);
     }
 
-    void insert(const T &l, const T &r) {
+    void insert(const T &l, const T &r){
         update(l, r, V(), [](T, T, V){}, [](T, T, V){});
     }
 
@@ -448,6 +451,62 @@ public:
     }
 };
 
+struct convex_hull{
+    struct point{
+        ll x, y;
+        bool operator < (const point& other) const{
+            if (x != other.x) return x < other.x;
+            return y < other.y;
+        }
+        bool operator == (const point& other) const{
+            return x == other.x && y == other.y;
+        }
+    };
+
+    vector<point> pts;
+    void add_point(ll x, ll y){
+        pts.push_back({x, y});
+    }
+
+    ll cross(point o, point a, point b){
+        return (a.x-o.x)*(b.y-o.y)-(a.y-o.y)*(b.x-o.x);
+    }
+
+    vector<point> solve(){
+        vector<point> P = pts;
+        int n = P.size();
+        if (n <= 1) return P;
+        sort(P.begin(), P.end());
+        P.erase(unique(P.begin(), P.end()), P.end());
+        int m = P.size();
+        if (m <= 1) return P;
+        vector<point> lower, upper;
+        for (auto &p : P){
+            while (lower.size() >= 2 &&
+                   cross(lower[lower.size()-2], lower[lower.size()-1], p) <= 0){
+                lower.pop_back();
+            }
+            lower.push_back(p);
+        }
+        for (int i = m-1; i >= 0; i--){
+            auto &p = P[i];
+            while (upper.size() >= 2 && cross(upper[upper.size()-2], upper[upper.size()-1], p) <= 0) upper.pop_back();
+            upper.push_back(p);
+        }
+        if (!lower.empty()) lower.pop_back();
+        if (!upper.empty()) upper.pop_back();
+        vector<point> hull;
+        hull.reserve(lower.size()+upper.size());
+        hull.insert(hull.end(), lower.begin(), lower.end());
+        hull.insert(hull.end(), upper.begin(), upper.end());
+        if (hull.size() <= 1) return hull;
+        int idx = 0;
+        for (int i = 1; i < (int)hull.size(); i++) if (hull[i] < hull[idx]) idx = i;
+        rotate(hull.begin(), hull.begin() + idx, hull.end());
+        return hull;
+    }
+};
+
 namespace tree{
 	template<typename T> class fenwicktree{
 	private:
@@ -455,7 +514,7 @@ namespace tree{
 		vector<T> bit, a;
 
 	public:
-		fenwicktree(int n) : n(n), bit(n, T()), a(n, T()) {}
+		fenwicktree(int n) : n(n), bit(n, T()), a(n, T()){}
 
 		void add(int i, T x){
 			while(i < n){
@@ -499,6 +558,11 @@ namespace tree{
             }
             return i + 1;
         }
+
+        void clear(){
+            fill(bit.begin(), bit.end(), 0);
+            fill(a.begin(), a.end(), 0);
+        }
 	};
 
     template<typename T> class lazy_fenwicktree{
@@ -522,7 +586,7 @@ namespace tree{
             return res;
         }
     public:
-        lazy_fenwicktree(int n) : n(n), bit1(n, T()), bit2(n, T()) {}
+        lazy_fenwicktree(int n) : n(n), bit1(n, T()), bit2(n, T()){}
 
         void apply(int l, int r, T x){
             add(bit1, l, x);
@@ -642,7 +706,7 @@ namespace tree{
         struct Node{
             T val;
             Node *l, *r;
-            Node(T v) : val(v), l(nullptr), r(nullptr) {}
+            Node(T v) : val(v), l(nullptr), r(nullptr){}
         };
 
         Node* root;
@@ -650,7 +714,7 @@ namespace tree{
         function<T(T, T)> op;
         function<T()> e;
     public:
-        dynamic_segtree(ll L, ll R, function<T(T,T)> op, function<T()> e) : L(L), R(R), op(op), e(e), root(nullptr) {}
+        dynamic_segtree(ll L, ll R, function<T(T,T)> op, function<T()> e) : L(L), R(R), op(op), e(e), root(nullptr){}
 
         void set(ll pos, T x){
             if (pos < L || pos >= R) return;
@@ -701,7 +765,7 @@ namespace tree{
             T res = e();
             stack<tuple<Node*, ll, ll>> st;
             st.emplace(root, L, R);
-            while (!st.empty()) {
+            while (!st.empty()){
                 auto [node, l, r] = st.top();
                 st.pop();
                 if (!node || r <= ql || qr <= l) continue;
@@ -722,7 +786,7 @@ namespace tree{
         struct node{
             T val;
             node *l, *r;
-            node(T v, node* l = nullptr, node* r = nullptr) : val(v), l(l), r(r) {}
+            node(T v, node* l = nullptr, node* r = nullptr) : val(v), l(l), r(r){}
         };
 
         int n;
@@ -945,7 +1009,7 @@ namespace tree{
             int sz, pri;
             Node *l, *r;
 
-            Node(T v, E id) : val(v), sum(v), lazy(id), rev(false), sz(1), pri(rng()), l(nullptr), r(nullptr) {}
+            Node(T v, E id) : val(v), sum(v), lazy(id), rev(false), sz(1), pri(rng()), l(nullptr), r(nullptr){}
         };
 
         using F = function<T(T, T)>;
@@ -961,7 +1025,7 @@ namespace tree{
         J id;
         Node* root = nullptr;
     public:
-        godtree(F op, I e, G mapping, H composition, J id) : op(op), mapping(mapping), composition(composition), e(e), id(id) {}
+        godtree(F op, I e, G mapping, H composition, J id) : op(op), mapping(mapping), composition(composition), e(e), id(id){}
 
         int sz(Node* t){ return t? t->sz: 0; }
         T sum(Node* t){ return t? t->sum: e(); }
@@ -1229,7 +1293,7 @@ namespace graph{
 
         bool merge(int x, int y, T w){
             int rx = root(x), ry = root(y);
-            if (rx == ry) return diff(x, y) == w;
+            if (rx == ry) return sum(x, y) == w;
             if (rankv[rx] < rankv[ry]){
                 swap(rx, ry);
                 swap(x, y);
@@ -1241,7 +1305,7 @@ namespace graph{
             return true;
         }
 
-		T diff(int x, int y){
+		T sum(int x, int y){
 			return potential(y)-potential(x);
 		}
 
@@ -1254,7 +1318,7 @@ namespace graph{
         tree::persistent_segtree<int> seg;
         int n;
 
-        persistent_dsu(int n) : seg(n, -1, [](int a, int b){ return 0; }), n(n) {}
+        persistent_dsu(int n) : seg(n, -1, [](int a, int b){ return 0; }), n(n){}
 
         int root(int v, int x){
             while (true){
@@ -1286,8 +1350,7 @@ namespace graph{
         }
     };
 
-    class lca{
-    public:
+    struct lca{
         int n, log;
         vector<vector<int>> parent;
         vector<vector<int>> graph;
@@ -1333,11 +1396,39 @@ namespace graph{
             }
         }
 
+        void build(const vector<vector<int>>& G, int root = 0){
+            graph = G;
+            queue<int> q;
+            q.push(root);
+            parent[root][0] = -1;
+            depth[root] = 0;
+            while (!q.empty()){
+                int v = q.front();
+                q.pop();
+                for (int nv : graph[v]){
+                    if (nv == parent[v][0]) continue;
+                    parent[nv][0] = v;
+                    depth[nv] = depth[v]+1;
+                    q.push(nv);
+                }
+            }
+            for (int k = 1; k < log; k++){
+                for (int v = 0; v < n; v++){
+                    if (parent[v][k-1] < 0){
+                        parent[v][k] = -1;
+                    }
+                    else{
+                        parent[v][k] = parent[parent[v][k-1]][k-1];
+                    }
+                }
+            }
+        }
+
         int lca_query(int u, int v){
             if (depth[u] < depth[v]) swap(u, v);
-            int diff = depth[u]-depth[v];
+            int sum = depth[u]-depth[v];
             for (int k = 0; k < log; k++){
-                if (diff & (1 << k)){
+                if (sum & (1 << k)){
                     if (u == -1) break;
                     u = parent[u][k];
                 }
@@ -1431,7 +1522,7 @@ namespace graph{
         vector<int> comp, order;
         vector<bool> used;
 
-        scc(int n) : N(n), G(n), RG(n), comp(n, -1), used(n, false) {}
+        scc(int n) : N(n), G(n), RG(n), comp(n, -1), used(n, false){}
 
         void add_edge(int u, int v){
             G[u].push_back(v);
@@ -1468,7 +1559,7 @@ namespace graph{
         vector<bool> is_bridge;
         int timer = 0;
 
-        tecc(int n) : N(n), G(n), ord(n, -1), low(n) {}
+        tecc(int n) : N(n), G(n), ord(n, -1), low(n){}
         
         void add_edge(int u, int v){
             int id = E.size();
@@ -1501,11 +1592,11 @@ namespace graph{
                 uf.merge(u, v);
             }
             comp.resize(N);
-            map<int, int> mp;
+            vector<int> mp(N, -1);
             int idx = 0;
             for (int i = 0; i < N; i++){
                 int r = uf.root(i);
-                if (!mp.count(r)) mp[r] = idx++;
+                if (mp[r] == -1) mp[r] = idx++;
                 comp[i] = mp[r];
             }
             vector<vector<int>> tree(idx);
@@ -1600,7 +1691,7 @@ namespace graph{
     public:
         vector<vector<edge>> G;
 
-        maxflow(int n) : N(n), G(n), level(n), it(n) {}
+        maxflow(int n) : N(n), G(n), level(n), it(n){}
 
         void add_edge(int u, int v, T cap){
             edge a = {v, cap, (int)G[v].size()};
@@ -1672,7 +1763,7 @@ namespace graph{
         vector<C> dist, h;
         vector<int> prevv, preve;
 
-        mincostflow(int n) : N(n), G(n), dist(n), prevv(n), preve(n), h(N, 0) {}
+        mincostflow(int n) : N(n), G(n), dist(n), prevv(n), preve(n), h(N, 0){}
 
         void add_edge(int u, int v, T cap, C cost){
             G[u].push_back({v, (int)G[v].size(), cap, cost});
@@ -1728,7 +1819,7 @@ namespace graph{
         vector<vector<int>> G;
         vector<int> parent, depth, heavy, head, pos, sz;
 
-        hld(int n) : N(n), G(n), parent(n), depth(n), heavy(n, -1), head(n), pos(n), sz(n) {}
+        hld(int n) : N(n), G(n), parent(n), depth(n), heavy(n, -1), head(n), pos(n), sz(n){}
 
         void add_edge(int u, int v){
             G[u].push_back(v);
@@ -1827,6 +1918,108 @@ namespace graph{
             return par[n];
         }
     };
+
+    struct dsu_ontree{
+        int N;
+        vector<vector<int>> G;
+        vector<int> sz, heavy;
+        vector<bool> big;
+
+        using F = function<void(int)>;
+        F add_node, remove_node, answer;
+
+        dsu_ontree(int n, F add, F remove, F ans) : N(n), G(n), sz(n), heavy(n, -1), big(n, false), add_node(add), remove_node(remove), answer(ans){}
+        dsu_ontree(int n) : N(n), G(n), sz(n), heavy(n, -1), big(n, false){}
+
+        void add_edge(int u, int v){
+            G[u].push_back(v);
+            G[v].push_back(u);
+        }
+
+        void dfs_sz(int n, int p){
+            sz[n] = 1;
+            int max_sz = 0;
+            for (int i : G[n]) if (i != p){
+                dfs_sz(i, n);
+                sz[n] += sz[i];
+                if (sz[i] > max_sz){
+                    max_sz = sz[i];
+                    heavy[n] = i;
+                }
+            }
+        }
+
+        void add_subtree(int n, int p){
+            add_node(n);
+            for (int i : G[n]){
+                if (i == p || big[i]) continue;
+                add_subtree(i, n);
+            }
+        }
+
+        void remove_subtree(int n, int p){
+            remove_node(n);
+            for (int i : G[n]){
+                if (i == p || big[i]) continue;
+                remove_subtree(i, n);
+            }
+        }
+
+        void dfs(int n, int p, bool keep){
+            for (int i : G[n]){
+                if (i == p || i == heavy[n]) continue;
+                dfs(i, n, false);
+            }
+            if (heavy[n] != -1){
+                dfs(heavy[n], n, true);
+                big[heavy[n]] = true;
+            }
+            add_subtree(n, p);
+            answer(n);
+            if (heavy[n] != -1) big[heavy[n]] = false;
+            if (!keep) remove_subtree(n, p);
+        }
+
+        void build(int root = 0){
+            dfs_sz(root, -1);
+            dfs(root, -1, true);
+        }
+    };
+
+    struct dynamic_dsu{
+        map<int, int> parent;
+        map<int, int> sz;
+
+        void ensure(int x){
+            if (!parent.count(x)){
+                parent[x] = x;
+                sz[x] = 1;
+            }
+        }
+
+        int root(int x){
+            ensure(x);
+            if (parent[x] == x) return x;
+            return parent[x] = root(parent[x]);
+        }
+
+        int size(int x){
+            return sz[root(x)];
+        }
+
+        bool same(int x, int y){
+            return root(x) == root(y);
+        }
+
+        void merge(int x, int y){
+            x = root(x);
+            y = root(y);
+            if (x == y) return;
+            if (sz[x] < sz[y]) swap(x, y);
+            parent[y] = x;
+            sz[x] += sz[y];
+        }
+    };
 }
 
 namespace num{
@@ -1896,7 +2089,7 @@ namespace num{
         ll res = 0;
         tree::fenwicktree<int> F(N+1);
         for (int i = N-1; i >= 0; i--){
-            res += F.sum(Z[i]-1);
+            res += F.sum(0, Z[i]-1);
             F.add(Z[i], 1);
         }
         return res;
@@ -1917,6 +2110,10 @@ namespace num{
 	template<typename T> T nc2(T n){
 		return n*(n-1)/2;
 	}
+
+    template<typename T> T nc3(T n){
+        return (n*(n-1)/2)*(n-2)/3;
+    }
 
 	class comb{
 	private:
@@ -2089,35 +2286,35 @@ namespace num{
 		return modint<mod>(a)/b;
 	}
 
-	template<ll mod, ll g> void ntt(vector<num::modint<mod>> & a, bool invert) {
+	template<ll mod, ll g> void ntt(vector<num::modint<mod>> & a, bool invert){
 		int n = a.size();
 		static vector<int> rev;
 		static vector<num::modint<mod>> roots{ {0}, {1} };
-		if ((int)rev.size() != n) {
+		if ((int)rev.size() != n){
 			int k = __builtin_ctz(n);
 			rev.assign(n, 0);
-			for (int i = 0; i < n; i++) {
+			for (int i = 0; i < n; i++){
 				rev[i] = (rev[i>>1] >> 1) | ((i&1) << (k-1));
 			}
 		}
-		if ((int)roots.size() < n) {
+		if ((int)roots.size() < n){
 			int k = __builtin_ctz(roots.size());
 			roots.resize(n);
-			while ((1 << k) < n) {
+			while ((1 << k) < n){
 				auto e = num::modint<mod>(g).pow((mod - 1) >> (k + 1));
-				for (int i = 1 << (k - 1); i < (1 << k); i++) {
+				for (int i = 1 << (k - 1); i < (1 << k); i++){
 					roots[2*i] = roots[i];
 					roots[2*i+1] = roots[i] * e;
 				}
 				k++;
 			}
 		}
-		for (int i = 0; i < n; i++) {
+		for (int i = 0; i < n; i++){
 			if (i < rev[i]) swap(a[i], a[rev[i]]);
 		}
-		for (int len = 1; len < n; len <<= 1) {
-			for (int i = 0; i < n; i += 2*len) {
-				for (int j = 0; j < len; j++) {
+		for (int len = 1; len < n; len <<= 1){
+			for (int i = 0; i < n; i += 2*len){
+				for (int j = 0; j < len; j++){
 					auto u = a[i+j];
 					auto v = a[i+j+len] * roots[len + j];
 					a[i+j] = u + v;
@@ -2125,7 +2322,7 @@ namespace num{
 				}
 			}
 		}
-		if (invert) {
+		if (invert){
 			reverse(a.begin() + 1, a.end());
 			auto inv_n = num::modint<mod>(n).inv();
 			for (auto &x : a) x *= inv_n;
@@ -2148,7 +2345,7 @@ namespace num{
 		return fa;
 	}
 
-    ull floor_sum_unsigned(ull n, ull m, ull a, ull b) {
+    ull floor_sum_unsigned(ull n, ull m, ull a, ull b){
         ull ans = 0;
         while (true){
             if (a >= m){ ans += n*(n-1)/2*(a/m); a %= m; }
@@ -2162,13 +2359,13 @@ namespace num{
         return ans;
     }
 
-    ll safe_mod(ll x, ll m) {
+    ll safe_mod(ll x, ll m){
         x %= m;
         if (x < 0) x += m;
         return x;
     }
 
-    ll floor_sum(ll n, ll m, ll a, ll b) {
+    ll floor_sum(ll n, ll m, ll a, ll b){
         assert(0 <= n && n < (1LL << 32));
         assert(1 <= m && m < (1LL << 32));
         ull ans = 0;
@@ -2196,20 +2393,152 @@ namespace num{
         ull x = floor_sqrt(n);
         return x*x == n;
     }
+
+    template<typename T> struct complex{
+        T real, imag;
+
+        complex(T r = T(), T i = T()) : real(r), imag(i){}
+
+        friend ostream& operator << (ostream& os, const complex& a){
+            if (a.real != 0) os << a.real;
+            if (a.imag != 0){
+                if (a.imag > 0 && a.real != 0) os << '+';
+                os << a.imag << 'i';
+            }
+            if (a.real == 0 && a.imag == 0) os << 0;
+            return os;
+        }
+
+        friend istream& operator >> (istream& is, complex& a){
+            is >> a.real >> a.imag;
+            return is;
+        }
+
+        complex conj() const{
+            return complex(real, -imag);
+        }
+
+        long double arg() const{
+            return atan2l(imag, real);
+        }
+
+        T norm() const{
+            return real*real+imag*imag;
+        }
+
+        long double abs() const{
+            return sqrtl((long double)norm());
+        }
+
+        complex operator + (const complex& other) const{
+            T r = real+other.real;
+            T i = imag+other.imag;
+            return complex(r, i);
+        }
+
+        complex operator + (T x) const{
+            T r = real+x;
+            T i = imag;
+            return complex(r, i);
+        }
+
+        complex operator - (const complex& other) const{
+            T r = real-other.real;
+            T i = imag-other.imag;
+            return complex(r, i);
+        }
+
+        complex operator - (T x) const{
+            T r = real-x;
+            T i = imag;
+            return complex(r, i);
+        }
+
+        complex operator * (const T x) const{
+            return complex(real*x, imag*x);
+        }
+        
+        complex operator * (const complex& other) const{
+            T r = real*other.real-imag*other.imag;
+            T i = real*other.imag+imag*other.real;
+            return complex(r, i);
+        }
+
+        complex operator / (const T x) const{
+            return complex(real/x, imag/x);
+        }
+
+        complex operator / (const complex& other) const{
+            complex child = (*this)*other.conj();
+            T mother = other.real*other.real+other.imag*other.imag;
+            return child/mother;
+        }
+
+        complex& operator += (const complex& other){
+            *this = *this+other;
+            return *this;
+        }
+
+        complex& operator -= (const complex& other){
+            *this = *this-other;
+            return *this;
+        }
+        
+        complex& operator *= (T x){
+            (*this) = (*this)*x;
+            return *this;
+        }
+
+        complex& operator *= (const complex& other){
+            (*this) = (*this)*other;
+            return *this;
+        }
+
+        complex& operator /= (T x){
+            (*this) = (*this)/x;
+            return *this;
+        }
+
+        complex& operator /= (const complex& other){
+            (*this) = (*this)/other;
+            return *this;
+        }
+
+        complex pow(ll n){
+            assert(!(n < 0 && real == 0 && imag == 0));
+            complex res(1, 0), x = *this;
+            if (n < 0) x = complex(1, 0)/x, n *= -1;
+            while (n){
+                if (n&1) res *= x;
+                x *= x;
+                n >>= 1;
+            }
+            return res;
+        }
+
+        bool operator == (const complex& other) const{
+            return real == other.real && imag == other.imag;
+        }
+
+        bool operator != (const complex& other) const{
+            return real != other.real || imag != other.imag;
+        }
+    };
 }
 
+#if 0
 namespace fps{
     using mint = atcoder::static_modint<998244353>;
     using vm = vector<mint>;
     struct fps : vm {
 #define d (*this)
 #define s int(vm::size())
-    template<class...Args> fps(Args...args): vm(args...) {}
-    fps(initializer_list<mint> a): vm(a.begin(),a.end()) {}
-    void rsz(int n) { if (s < n) resize(n);}
-    fps& low_(int n) { resize(n); return d;}
+    template<class...Args> fps(Args...args): vm(args...){}
+    fps(initializer_list<mint> a): vm(a.begin(),a.end()){}
+    void rsz(int n){ if (s < n) resize(n);}
+    fps& low_(int n){ resize(n); return d;}
     fps low(int n) const { return fps(d).low_(n);}
-    mint& operator[](int i) { rsz(i+1); return vm::operator[](i);}
+    mint& operator[](int i){ rsz(i+1); return vm::operator[](i);}
     mint operator[](int i) const { return i<s ? vm::operator[](i) : 0;}
     mint operator()(mint x) const{
         mint r;
@@ -2217,11 +2546,11 @@ namespace fps{
         return r;
     }
     fps operator-() const { fps r(d); rep(i,s) r[i] = -r[i]; return r;}
-    fps& operator+=(const fps& a) { rsz(a.size()); rep(i,a.size()) d[i] += a[i]; return d;}
-    fps& operator-=(const fps& a) { rsz(a.size()); rep(i,a.size()) d[i] -= a[i]; return d;}
-    fps& operator*=(const fps& a) { return d = atcoder::convolution(d, a);}
-    fps& operator*=(mint a) { rep(i,s) d[i] *= a; return d;}
-    fps& operator/=(mint a) { rep(i,s) d[i] /= a; return d;}
+    fps& operator+=(const fps& a){ rsz(a.size()); rep(i,a.size()) d[i] += a[i]; return d;}
+    fps& operator-=(const fps& a){ rsz(a.size()); rep(i,a.size()) d[i] -= a[i]; return d;}
+    fps& operator*=(const fps& a){ return d = atcoder::convolution(d, a);}
+    fps& operator*=(mint a){ rep(i,s) d[i] *= a; return d;}
+    fps& operator/=(mint a){ rep(i,s) d[i] /= a; return d;}
     fps operator+(const fps& a) const { return fps(d) += a;}
     fps operator-(const fps& a) const { return fps(d) -= a;}
     fps operator*(const fps& a) const { return fps(d) *= a;}
@@ -2232,12 +2561,12 @@ namespace fps{
         for (int i = 1; i < s; i <<= 1) r = r*mint(2) - (r*r*low(i<<1)).low(i<<1);
         return r.low_(s);
     }
-    fps diff() const{
+    fps sum() const{
         fps r(max(0, s-1));
         for (int i = 1; i < s; i++) r[i-1] = d[i]*i;
         return r;
     }
-    fps& operator/=(const fps& a) { int w = s; d *= ~a; return d.low_(w);}
+    fps& operator/=(const fps& a){ int w = s; d *= ~a; return d.low_(w);}
     fps operator/(const fps& a) const { return fps(d) /= a;}
     fps integ() const {
         fps r;
@@ -2246,7 +2575,7 @@ namespace fps{
     }
     fps log() const{
         assert((*this)[0] == 1);
-        return (diff()*(~(*this))).low(size()-1).integ();
+        return (sum()*(~(*this))).low(size()-1).integ();
     }
     fps exp() const{
         assert((*this)[0] == 0);
@@ -2262,7 +2591,7 @@ namespace fps{
     fps pow(long long k) const{
         if ((*this)[0] != 0) return (log()*mint(k)).exp().low(size());
         int n = size();
-        if (k == 0) {
+        if (k == 0){
             fps r(n);
             r[0] = 1;
             return r;
@@ -2284,11 +2613,12 @@ namespace fps{
 #undef s
 #undef d
     };
-    ostream& operator<<(ostream&o,const fps&a) {
+    ostream& operator<<(ostream&o,const fps&a){
         rep(i,a.size()) o<<(i?" ":"")<<a[i].val();
         return o;
     }
 }
+#endif
 
 namespace matrix{
     template<typename T> class matrix{
@@ -2297,7 +2627,7 @@ namespace matrix{
         using mat = vector<vector<T>>;
         int sz;
         mat A;
-        explicit matrix(int sz, T val = T()) : sz(sz), A(sz, vector<T>(sz, val)) {}
+        explicit matrix(int sz, T val = T()) : sz(sz), A(sz, vector<T>(sz, val)){}
 
         vector<T>& operator [] (int i){
             return A[i];
@@ -2407,7 +2737,7 @@ namespace matrix{
         T inf = numeric_limits<T>::max()/2;
         int sz;
         mat A;
-        explicit minplus_matrix(int sz, T val = numeric_limits<T>::max()/2) : sz(sz), A(sz, vector<T>(sz, val)) {}
+        explicit minplus_matrix(int sz, T val = numeric_limits<T>::max()/2) : sz(sz), A(sz, vector<T>(sz, val)){}
 
         vector<T>& operator[] (int i){
             return A[i];
@@ -2643,6 +2973,47 @@ namespace matrix{
             return less_than(l, r, b)-less_than(l, r, a);
         }
     };
+
+    template<typename T> struct sim{
+        struct arr{
+            int sz;
+            T sum;
+            vector<T> pref;
+            arr(int n) : sz(n), sum(T()), pref(n, T()){}
+        };
+
+        int N, block;
+        vector<arr> table;
+        vector<T> block_pref;
+
+        sim(int n) : N(n), block(sqrt(n)+1){
+            int num_blocks = (N+block-1)/block;
+            for (int i = 0; i < num_blocks; i++){
+                int sz = min(block, N-i*block);
+                table.emplace_back(sz);
+            }
+            block_pref.assign(num_blocks, T());
+        }
+
+        void add(int i, T x){
+            int y = i/block, z = i%block;
+            table[y].sum += x;
+            for (int j = z; j < table[y].sz; j++) table[y].pref[j] += x;
+            for (int k = y; k < (int)block_pref.size(); k++) block_pref[k] += x;
+        }
+
+        T _sum(int r){
+            if (r < 0) return T();
+            int y = r/block, z = r%block;
+            T res = table[y].pref[z];
+            if (y > 0) res += block_pref[y-1];
+            return res;
+        }
+
+        T sum(int l, int r){
+            return _sum(r-1) - _sum(l-1);
+        }
+    };
 }
 
 namespace strings{
@@ -2682,25 +3053,32 @@ namespace strings{
 
     class rollinghash{
     private:
-        const ll mod = 1000000007;
-        const ll BASE = 100;
-        vector<ll> hash;
-        vector<ll> power;
+        const array<ll, 5> mod = {998244353, 1000000007, 1000000009, 1000000021, 1000000033};
+        const ll base = 100; 
+        vector<array<ll, 5>> hash, power;
 
     public:
         rollinghash(const string& S){
             int N = S.size();
             hash.resize(N+1);
             power.resize(N+1);
-            power[0] = 1;
-            for (int i = 0; i < N; i++) power[i+1] = (power[i]*BASE)%mod;
-            hash[0] = 0;
-            for (int i = 0; i < N; i++) hash[i+1] = (hash[i]*BASE+S[i])%mod;
+            power[0] = {1, 1, 1, 1, 1};
+            hash[0] = {0, 0, 0, 0, 0};
+            for (int i = 0; i < N; i++) for (int j = 0; j < 5; j++){
+                power[i+1][j] = (power[i][j]*base)%mod[j];
+            }
+            for (int i = 0; i < N; i++) for (int j = 0; j < 5; j++){
+                hash[i+1][j] = (hash[i][j]*base+S[i])%mod[j];
+            }
         }
 
-        ll get(int l, int r){
-            ll res = hash[r]-(hash[l]*power[r-l])%mod;
-            if (res < 0) res += mod;
+        array<ll, 5> get(int l, int r){
+            array<ll, 5> res;
+            for (int i = 0; i < 5; i++){
+                ll num = hash[r][i]-(hash[l][i]*power[r-l][i])%mod[i];
+                if (num < 0) num += mod[i];
+                res[i] = num;
+            }
             return res;
         }
     };
@@ -2795,6 +3173,66 @@ namespace strings{
             return upper_bound(t)-lower_bound(t);
         }
     };
+
+    struct segtree_rollinghash{
+        struct node {
+            array<ll, 5> h;
+            int len;
+        };
+
+        template<typename T> using segtree = tree::segtree<T>;
+        const array<ll, 5> mod = {998244353, 1000000007, 1000000009, 1000000021, 1000000033};
+        const ll base = 100;
+        vector<array<ll, 5>> power;
+        function<node(node, node)> op;
+        node e = {{0, 0, 0, 0, 0}, 0};
+        segtree<node> seg;
+
+        segtree_rollinghash(const string& s) : power(s.size()+1), op(nullptr), seg(build_init(s), e, [&](node a, node b){ return a; }){
+            int n = s.size();
+            build_power(n);
+            op = [&](node a, node b){
+                if (a.len == 0) return b;
+                if (b.len == 0) return a;
+                node res;
+                res.len = a.len+b.len;
+                for (int i = 0; i < 5; i++){
+                    res.h[i] = (a.h[i]*power[b.len][i]+b.h[i])%mod[i];
+                }
+                return res;
+            };
+            seg = segtree<node>(build_init(s), e, op);
+        }
+
+        void build_power(int n){
+            power.resize(n+1);
+            power[0] = {1, 1, 1, 1, 1};
+            for (int i = 0; i < n; i++) for (int j = 0; j < 5; j++){
+                power[i+1][j] = power[i][j]*base%mod[j];
+            }
+        }
+
+        vector<node> build_init(const string& s){
+            int n = s.size();
+            vector<node> v(n);
+            for (int i = 0; i < n; i++){
+                v[i].len = 1;
+                for (int j = 0; j < 5; j++) v[i].h[j] = s[i];
+            }
+            return v;
+        }
+
+        void set(int pos, char c){
+            node x;
+            x.len = 1;
+            for (int j = 0; j < 5; j++) x.h[j] = c;
+            seg.set(pos, x);
+        }
+
+        node get(int l, int r){
+            return seg.prod(l, r);
+        }
+    };
 }
 
 namespace arrays{
@@ -2806,7 +3244,7 @@ namespace arrays{
         vector<ull> SA, SB;
 
     public:
-        zobristrange(int n) : N(n), w1(n+1), w2(n+1), HA1(n+1), HA2(n+1), HB1(n+1), HB2(n+1), SA(n+1), SB(n+1) {
+        zobristrange(int n) : N(n), w1(n+1), w2(n+1), HA1(n+1), HA2(n+1), HB1(n+1), HB2(n+1), SA(n+1), SB(n+1){
             for (int i = 1; i <= N; i++){
                 w1[i] = rng();
                 w2[i] = rng();
@@ -2959,9 +3397,9 @@ using amint = atcoder::static_modint<MOD>;
 using mint = num::modint<MOD>;
 using num::modpow;
 using num::isprime;
+// template<typename T> using cmp = num::complex<T>;
 template<typename T> using fenwicktree = tree::fenwicktree<T>;
 template<typename T> using lazy_fenwicktree = tree::lazy_fenwicktree<T>;
-template<typename T> using segtree = tree::segtree<T>;
 template<typename T> using segatree = tree::segtree<T>;
 template<typename T, typename U> using lazy_segtree = tree::lazy_segtree<T, U>;
 template<typename T, typename U> using lazy_segatree = tree::lazy_segtree<T, U>;
