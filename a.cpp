@@ -8,12 +8,13 @@ int testcases = 10;
 #include <atcoder/all>
 int testcases = 1;
 #endif
-// #pragma GCC target("avx2")
-// #pragma GCC optimize("O3")
-// #pragma GCC optimize("unroll-loops")
 
-#define MOD 1000000007ll
-// #define MOD 998244353ll
+#pragma GCC target("avx2")
+#pragma GCC optimize("O3")
+#pragma GCC optimize("unroll-loops")
+
+// #define MOD 1000000007ll
+#define MOD 998244353ll
 // #define MOD 10007ll
 #define INF (long long)4e18
 #define EPS 1e-14
@@ -2382,6 +2383,16 @@ namespace num{
         return ans+floor_sum_unsigned(n, m, a, b);
     }
 
+    ll sum_floor(ll N){
+        ll res = 0, l = 1;
+        while (l <= N){
+            ll q = N/l, r = N/q;
+            res += q*(r-l+1);
+            l = r+1;
+        }
+        return res;
+    }
+
     ull floor_sqrt(ull n){
         ull x = sqrtl((ld)n);
         while ((x+1)*(x+1) <= n) x++;
@@ -2526,99 +2537,145 @@ namespace num{
     };
 }
 
-#if 0
 namespace fps{
-    using mint = atcoder::static_modint<998244353>;
+    using atcoder::convolution;
+    using mint = atcoder::modint998244353;
     using vm = vector<mint>;
-    struct fps : vm {
 #define d (*this)
 #define s int(vm::size())
-    template<class...Args> fps(Args...args): vm(args...){}
-    fps(initializer_list<mint> a): vm(a.begin(),a.end()){}
-    void rsz(int n){ if (s < n) resize(n);}
-    fps& low_(int n){ resize(n); return d;}
-    fps low(int n) const { return fps(d).low_(n);}
-    mint& operator[](int i){ rsz(i+1); return vm::operator[](i);}
-    mint operator[](int i) const { return i<s ? vm::operator[](i) : 0;}
-    mint operator()(mint x) const{
-        mint r;
-        for (int i = s-1; i >= 0; --i) r = r*x+d[i];
-        return r;
-    }
-    fps operator-() const { fps r(d); rep(i,s) r[i] = -r[i]; return r;}
-    fps& operator+=(const fps& a){ rsz(a.size()); rep(i,a.size()) d[i] += a[i]; return d;}
-    fps& operator-=(const fps& a){ rsz(a.size()); rep(i,a.size()) d[i] -= a[i]; return d;}
-    fps& operator*=(const fps& a){ return d = atcoder::convolution(d, a);}
-    fps& operator*=(mint a){ rep(i,s) d[i] *= a; return d;}
-    fps& operator/=(mint a){ rep(i,s) d[i] /= a; return d;}
-    fps operator+(const fps& a) const { return fps(d) += a;}
-    fps operator-(const fps& a) const { return fps(d) -= a;}
-    fps operator*(const fps& a) const { return fps(d) *= a;}
-    fps operator*(mint a) const { return fps(d) *= a;}
-    fps operator/(mint a) const { return fps(d) /= a;}
-    fps operator~() const {
-        fps r({d[0].inv()});
-        for (int i = 1; i < s; i <<= 1) r = r*mint(2) - (r*r*low(i<<1)).low(i<<1);
-        return r.low_(s);
-    }
-    fps sum() const{
-        fps r(max(0, s-1));
-        for (int i = 1; i < s; i++) r[i-1] = d[i]*i;
-        return r;
-    }
-    fps& operator/=(const fps& a){ int w = s; d *= ~a; return d.low_(w);}
-    fps operator/(const fps& a) const { return fps(d) /= a;}
-    fps integ() const {
-        fps r;
-        rep(i,s) r[i+1] = d[i]/(i+1);
-        return r;
-    }
-    fps log() const{
-        assert((*this)[0] == 1);
-        return (sum()*(~(*this))).low(size()-1).integ();
-    }
-    fps exp() const{
-        assert((*this)[0] == 0);
-        fps g({1});
-        int n = size();
-        for (int i = 1; i < n; i <<= 1){
-            fps f = low(i<<1);
-            fps lg = g.log();
-            g = (g*(f-lg+fps({1}))).low(i<<1);
-        }
-        return g.low(n);
-    }
-    fps pow(long long k) const{
-        if ((*this)[0] != 0) return (log()*mint(k)).exp().low(size());
-        int n = size();
-        if (k == 0){
-            fps r(n);
-            r[0] = 1;
+    struct fps : vm{
+        template<class...Args> fps(Args...args): vm(args...) {}
+        fps(initializer_list<mint> a): vm(a.begin(), a.end()) {}
+        fps(): vm() {}
+        void rsz(int n){ if (s < n) resize(n); }
+        fps& low_(int n){ resize(n); return d; }
+        fps low(int n) const{ return fps(d).low_(n); }
+        mint& operator[] (int i){ rsz(i+1); return vm::operator[](i); }
+        mint operator[] (int i) const{ return i < s? vm::operator[](i): 0; }
+        mint operator()(mint x) const{
+            mint r;
+            for (int i = s-1; i >= 0; i--) r = r*x+d[i];
             return r;
         }
-        int t = 0;
-        while (t < n && (*this)[t] == 0) t++;
-        if (t == n) return fps(n);
-        if ((long long)t*k >= n) return fps(n);
-        mint c = (*this)[t];
-        fps g(n-t);
-        for (int i = t; i < n; i++) g[i-t] = (*this)[i]/c;
-        fps res = (g.log()*mint(k)).exp();
-        mint ck = c.pow(k);
-        res *= ck;
-        fps ans(n);
-        for (int i = 0; i < res.size(); i++) if (i+t*k < n) ans[i+t*k] = res[i];
-        return ans;
-    }
+        fps operator- () const{
+            fps r(d);
+            for (int i = 0; i < s; i++) r[i] = -r[i];
+            return r;
+        }
+        fps& operator+= (const fps& a){
+            rsz(a.size());
+            for (int i = 0; i < (int)a.size(); i++) d[i] += a[i];
+            return d;
+        }
+        fps& operator-= (const fps& a){
+            rsz(a.size());
+            for (int i = 0; i < (int)a.size(); i++) d[i] -= a[i];
+            return d;
+        }
+        fps& operator*= (const fps& a){
+            vm res = convolution(d, a);
+            d = fps(res.begin(), res.end());
+            return d;
+        }
+        fps& operator*= (mint a){
+            for (int i = 0; i < s; i++) d[i] *= a;
+            return d;
+        }
+        fps& operator/= (mint a){
+            for (int i = 0; i < s; i++) d[i] /= a;
+            return d;
+        }
+        fps operator+ (const fps& a) const{ return fps(d) += a; }
+        fps operator- (const fps& a) const{ return fps(d) -= a; }
+        fps operator* (const fps& a) const{ return fps(d) *= a; }
+        fps operator* (mint a) const{ return fps(d) *= a; }
+        fps operator/ (mint a) const{ return fps(d) /= a; }
+        fps operator~ () const{
+            fps r({d[0].inv()});
+            for (int i = 1; i < s; i <<= 1) r = r*mint(2)-(r*r*low(i<<1)).low(i<<1);
+            return r.low_(s);
+        }
+        fps& operator/= (const fps& a){ int w = s; d *= ~a; return d.low_(w); }
+        fps operator/ (const fps& a) const{ return fps(d) /= a; }
+        fps integ() const{
+            fps r;
+            for (int i = 0; i < s; i++) r[i+1] = d[i]/(i+1);
+            return r;
+        }
+        friend ostream& operator<< (ostream& os, const fps& a){
+            for (int i = 0; i < (int)a.size(); i++) os << (i? " ": "") << a[i].val();
+            return os;
+        }
+        fps operator>> (int k) const{
+            if (s <= k) return fps();
+            return fps(this->begin()+k, this->end());
+        }
+        fps operator<< (int k) const{
+            fps r(k, 0);
+            r.insert(r.end(), this->begin(), this->end());
+            return r;
+        }
+        fps log(int n) const{
+            return (this->diff()*this->inv(n)).low(n-1).integ().low(n);
+        }
+        fps exp(int n) const{
+            fps r({1});
+            for (int i = 1; i < n; i <<= 1){
+                r = r*(fps({1})-r.log(i<<1)+this->low(i<<1));
+                r = r.low(i<<1);
+            }
+            return r.low(n);
+        }
+        fps diff() const{
+            if (s == 0) return fps();
+            fps r(max(0, s-1));
+            for (int i = 1; i < s; i++) r[i-1] = d[i]*i;
+            return r;
+        }
+        fps inv(int n) const{
+            fps r({d[0].inv()});
+            int m = 1;
+            while (m < n){
+                m <<= 1;
+                fps f = this->low(m);
+                fps nr = r*r*f;
+                r = (r*mint(2)-nr).low_(m);
+            }
+            return r.low(n);
+        }
+        fps pow(ll k, int n) const{
+            if (k == 0){
+                fps r(n);
+                r[0] = 1;
+                return r;
+            }
+            int i = 0;
+            while (i < s && d[i] == 0) i++;
+            if (i == s) return fps(n);
+            if ((ll)i*k >= n) return fps(n);
+            mint c = d[i];
+            fps g = this->low(n);
+            g = g>>i;
+            g /= c;
+            fps res = (g.log(n)*mint(k)).exp(n);
+            res *= c.pow(k);
+            res = res<<(i*k);
+            return res.low(n);
+        }
+        fps poly_pow(ll k, int n) const{
+            fps res(n), f = this->low(n);
+            res[0] = 1;
+            while(k){
+                if (k&1) res = (res*f).low(n);
+                f = (f*f).low(n);
+                k >>= 1;
+            }
+            return res;
+        }
+    };
 #undef s
 #undef d
-    };
-    ostream& operator<<(ostream&o,const fps&a){
-        rep(i,a.size()) o<<(i?" ":"")<<a[i].val();
-        return o;
-    }
-}
-#endif
+} 
 
 namespace matrix{
     template<typename T> class matrix{
