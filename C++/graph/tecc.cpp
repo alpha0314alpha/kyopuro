@@ -2,12 +2,16 @@ struct tecc{
     int N;
     vector<vector<pair<int, int>>> G;
     vector<pair<int, int>> E;
-    vector<int> ord, low, comp;
+    vector<int> ord, low, comp_;
     vector<bool> is_bridge;
     int timer = 0;
 
+    vector<vector<int>> groups_;
+    vector<vector<int>> tree_;
+    bool built = false;
+
     tecc(int n) : N(n), G(n), ord(n, -1), low(n) {}
-    
+
     void add_edge(int u, int v){
         int id = E.size();
         E.emplace_back(u, v);
@@ -15,45 +19,69 @@ struct tecc{
         G[v].emplace_back(u, id);
     }
 
-    void dfs(int n, int p = -1){
-        ord[n] = low[n] = timer++;
-        for (auto [i, id] : G[n]) if (id != p){
-            if (ord[i] != -1) low[n] = min(low[n], ord[i]);
+    void dfs(int v, int pe = -1){
+        ord[v] = low[v] = timer++;
+        for (auto [to, id] : G[v]){
+            if (id == pe) continue;
+            if (ord[to] != -1){
+                low[v] = min(low[v], ord[to]);
+            }
             else{
-                dfs(i, id);
-                low[n] = min(low[n], low[i]);
-                if (ord[n] < low[i]) is_bridge[id] = true;
+                dfs(to, id);
+                low[v] = min(low[v], low[to]);
+                if (ord[v] < low[to]) is_bridge[id] = true;
             }
         }
     }
 
-    vector<vector<int>> build(){
+    void build(){
+        if (built) return;
+        built = true;
         fill(ord.begin(), ord.end(), -1);
         timer = 0;
         is_bridge.assign(E.size(), false);
         for (int i = 0; i < N; i++) if (ord[i] == -1) dfs(i);
         dsu uf(N);
         for (int i = 0; i < (int)E.size(); i++){
-            if (is_bridge[i]) continue;
-            auto [u, v] = E[i];
-            uf.merge(u, v);
+            if (!is_bridge[i]){
+                auto [u, v] = E[i];
+                uf.merge(u, v);
+            }
         }
-        comp.resize(N);
+        comp_.resize(N);
         map<int, int> mp;
         int idx = 0;
         for (int i = 0; i < N; i++){
             int r = uf.root(i);
             if (!mp.count(r)) mp[r] = idx++;
-            comp[i] = mp[r];
+            comp_[i] = mp[r];
         }
-        vector<vector<int>> tree(idx);
+        groups_.assign(idx, {});
+        for (int i = 0; i < N; i++){
+            groups_[comp_[i]].push_back(i);
+        }
+        tree_.assign(idx, {});
         for (int i = 0; i < (int)E.size(); i++){
             if (!is_bridge[i]) continue;
             auto [u, v] = E[i];
-            int a = comp[u], b = comp[v];
-            tree[a].push_back(b);
-            tree[b].push_back(a);
+            int a = comp_[u], b = comp_[v];
+            tree_[a].push_back(b);
+            tree_[b].push_back(a);
         }
-        return tree;
+    }
+
+    const vector<int>& comp(){
+        build();
+        return comp_;
+    }
+
+    const vector<vector<int>>& groups(){
+        build();
+        return groups_;
+    }
+
+    const vector<vector<int>>& tree(){
+        build();
+        return tree_;
     }
 };
