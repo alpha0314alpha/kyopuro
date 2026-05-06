@@ -12,7 +12,7 @@ struct waveletmatrix{
         vector<ll> cur = v, nxt(n);
         for (int level = LOG-1; level >= 0; level--){
             for (int i = 0; i < n; i++){
-                bit[level][i+1] = bit[level][i] + ((cur[i]>>level)&1);
+                bit[level][i+1] = bit[level][i]+((cur[i]>>level)&1);
             }
             int zero = 0;
             for (ll x: cur) if (!((x>>level)&1)) zero++;
