@@ -30,13 +30,14 @@ int testcases = 1;
 #define accu accumulate
 #define popcount __builtin_popcount
 #define clzll __builtin_clzll
-#define elif else if 
+#define elif else if
 #define nall(A) A.begin(), A.end()
 #define rall(A) A.rbegin(), A.rend()
-#define rep(i, n) for(int i = 0; i < (n); i++) 
+#define rep(i, n) for(int i = 0; i < (n); i++)
 #define replr(i, l, r) for (int i = l; i < r; i++)
 #define rrep(i, n) for(int i = (n)-1; i >= 0; i--)
 #define each(i, a) for(auto& i : a)
+#define unless(a) if (!(a))
 #define out(x, y) (!(0 <= x && x < H && 0 <= y && y < W))
 #define yes cout<<"Yes"<<endl
 #define no cout<<"No"<<endl
@@ -117,7 +118,7 @@ template<typename T> istream& operator >> (istream& is, deque<T>& v){
 template<typename T> ostream& operator << (ostream& os, const deque<T>& v){
 	for (int i = 0; i < v.size(); i++){
 		if (i < v.size()-1) os << v[i] << ' ';
-		else os << v[i] << '\n';
+		else os << v[i];
 	}
 	return os;
 }
@@ -130,7 +131,7 @@ template<typename T> istream& operator >> (istream& is, vector<T>& v){
 template<typename T> ostream& operator << (ostream& os, const vector<T>& v){
 	for (int i = 0; i < v.size(); i++){
 		if (i < v.size()-1) os << v[i] << ' ';
-		else os << v[i] << '\n';
+		else os << v[i];
 	}
 	return os;
 }
@@ -223,6 +224,131 @@ template<typename T> vector<ll> zaatu(const vector<T>& A){
 	return res;
 }
 
+struct binary_trie{
+    struct node{
+        int ch[2];
+        int count;
+        node() : ch{-1,-1}, count(0) {}
+    };
+
+    static constexpr int LOG = 60;
+    vector<node> T;
+
+    binary_trie(){
+        T.emplace_back();
+    }
+
+    int new_node(){
+        T.emplace_back();
+        return (int)T.size()-1;
+    }
+
+    int size() const{
+        return T[0].count;
+    }
+
+    int count(ll x) const{
+        int v = 0;
+        for (int i = LOG-1; i >= 0; i--){
+            int f = (x>>i)&1;
+            if (T[v].ch[f] == -1) return 0;
+            else v = T[v].ch[f];
+        }
+        return T[v].count;
+    }
+
+    void insert(ll x, int k = 1){
+        int v = 0;
+        T[v].count += k;
+        for (int i = LOG-1; i >= 0; i--){
+            int f = (x>>i)&1;
+            if (T[v].ch[f] == -1) T[v].ch[f] = new_node();
+            v = T[v].ch[f];
+            T[v].count += k;
+        }
+    }
+
+    bool erase(ll x, int k = 1){
+        if (count(x) < k) return false;
+        else{
+            int v = 0;
+            T[v].count -= k;
+            for (int i = LOG-1; i >= 0; i--){
+                int f = (x>>i)&1;
+                v = T[v].ch[f];
+                T[v].count -= k;
+            }
+            return true;
+        }
+    }
+
+    ll kth(int k) const{
+        assert(0 <= k && k < size());
+        int v = 0;
+        ll x = 0;
+        for (int i = LOG-1; i >= 0; i--){
+            int lc = 0;
+            if (T[v].ch[0] != -1) lc = T[T[v].ch[0]].count;
+            if (k < lc) v = T[v].ch[0];
+            else{
+                k -= lc;
+                x |= 1LL<<i;
+                v = T[v].ch[1];
+            }
+        }
+        return x;
+    }
+
+    int count_less(ll x) const{
+        int v = 0;
+        int res = 0;
+        for (int i = LOG-1; i >= 0; i--){
+            if (v == -1) break;
+            int f = (x>>i)&1;
+            if (f){
+                int u = T[v].ch[0];
+                if (u != -1) res += T[u].count;
+            }
+            v = T[v].ch[f];
+        }
+        return res;
+    }
+
+    ll min_xor(ll x) const{
+        assert(size() > 0);
+        int v = 0;
+        ll res = 0;
+        for (int i = LOG-1; i >= 0; i--){
+            int f = (x>>i)&1;
+            int u = T[v].ch[f];
+            if (u != -1 && T[u].count > 0){
+                v = u;
+            }
+            else{
+                res |= 1LL<<i;
+                v = T[v].ch[f^1];
+            }
+        }
+        return res;
+    }
+
+    ll max_xor(ll x) const{
+        assert(size() > 0);
+        int v = 0;
+        ll res = 0;
+        for (int i = LOG-1; i >= 0; i--){
+            int f = ((x>>i)&1)^1;
+            int u = T[v].ch[f];
+            if (u != -1 && T[u].count > 0){
+                res |= 1LL<<i;
+                v = u;
+            }
+            else v = T[v].ch[f^1];
+        }
+        return res;
+    }
+};
+
 class mos{
 private:
     struct query{
@@ -259,194 +385,92 @@ public:
     }
 };
 
-template<typename T, typename V = long long> struct intervalset{
-    struct node{
-        T l, r;
-        V val;
-        node(T l, T r, V val) : l(l), r(r), val(val){}
-        bool operator < (const node& other) const{
-            if (l != other.l) return l < other.l;
-            return r < other.r;
+template<typename T> struct intervalset{
+    static constexpr T inf = numeric_limits<T>::max();
+    static constexpr T ninf = numeric_limits<T>::lowest();
+    set<pair<T,T>> st;
+
+    bool touch_left(T a, T b) const{
+        return b == inf || a <= b + 1;
+    }
+
+    bool touch_right(T a, T b) const{
+        return b == ninf || a >= b - 1;
+    }
+
+    auto find(T x){
+        auto it = st.upper_bound({x, inf});
+        if (it == st.begin()) return st.end();
+        --it;
+        if (it->first <= x && x <= it->second) return it;
+        return st.end();
+    }
+
+    bool contains(T x){
+        return find(x) != st.end();
+    }
+
+    bool contains(T l, T r){
+        if (l > r) return false;
+        auto it = find(l);
+        return it != st.end() && r <= it->second;
+    }
+
+    void insert(T l, T r){
+        if (l > r) return;
+        auto it = st.lower_bound({l, ninf});
+        if (it != st.begin()){
+            auto prv = prev(it);
+            if (touch_right(prv->second, l)) it = prv;
         }
-        friend ostream& operator<< (ostream &s, node e){
-            return s << "([" << e.l << ", " << e.r << "): " << e.val << ")";
+        while (it != st.end() && touch_left(it->first, r)){
+            l = min(l, it->first);
+            r = max(r, it->second);
+            it = st.erase(it);
         }
-    };
-    const V id;
-    set<node> S;
-    intervalset(V id = V()) : id(id){}
-    intervalset(const vector<V>& v, V id = V()) : id(id){
-        vector<node> vec;
-        for (int l = 0; l < (int)v.size(); l++){
-            int r = l;
-            while (r < (int)v.size() && v[r] == v[l]) r++;
-            vec.emplace_back(l, r, v[l]);
-            l = r;
+        st.insert({l, r});
+    }
+
+    void erase(T l, T r){
+        if (l > r) return;
+        auto it = st.lower_bound({l, ninf});
+        if (it != st.begin()) --it;
+        vector<pair<T,T>> add;
+        while (it != st.end()){
+            auto [L, R] = *it;
+            if (R < l){
+                ++it;
+                continue;
+            }
+            if (L > r) break;
+            it = st.erase(it);
+            if (L < l) add.push_back({L, T(l-1)});
+            if (r < R) add.push_back({T(r+1), R});
         }
-        S = set<node>(vec.begin(), vec.end());
+        for (auto &p : add) st.insert(p);
     }
 
-    typename set<node>::iterator begin(){ return S.begin(); }
-    typename set<node>::iterator end(){ return S.end(); }
-    typename set<node>::iterator get(T p){
-        auto it = S.upper_bound(node(p, numeric_limits<T>::max(), 0));
-        if (it == S.begin()) return S.end();
-        it = prev(it);
-        if (it->l <= p && p < it->r) return it;
-        return S.end();
-    }
-    typename set<node>::iterator lower_bound(T p){
-        auto it = get(p);
-        if (it != S.end()) return it;
-        return S.upper_bound(node(p, numeric_limits<T>::max(), 0));
+    void insert(T x){
+        insert(x, x);
     }
 
-    bool covered(T p){
-        return get(p) != S.end();
+    void erase(T x){
+        erase(x, x);
     }
 
-    bool same(T p, T q){
-        if (!covered(p) || !covered(q)) return false;
-        return get(p) == get(q);
+    vector<pair<T, T>> intervals() const{
+        return vector<pair<T, T>>(st.begin(), st.end());
     }
 
-    V get_val(T p){
-        auto it = get(p);
-        if (it != S.end()) return it->val;
-        return id;
+    T mex(T x){
+        auto it = find(x);
+        if (it == st.end()) return x;
+        if (it->second == inf) return inf;
+        return it->second + 1;
     }
 
-    V operator[] (T p){
-        return get_val(p);
-    }
-
-    T get_mex(T p = 0){
-        auto it = S.upper_bound(node(p, numeric_limits<T>::max(), 0));
-        if (it == S.begin()) return p;
-        it = prev(it);
-        if (it->l <= p && p < it->r) return it->r;
-        return p;
-    }
-
-    template<typename ADDFUNC, typename DELFUNC> void update(T l, T r, V val, const ADDFUNC& add, const DELFUNC& del){
-        auto it = S.lower_bound(node(l, numeric_limits<T>::max(), val));
-        while (it != S.end() && it->l <= r){
-            if (it->l == r){
-                if (it->val == val){
-                    r = it->r;
-                    del(it->l, it->r, it->val);
-                    it = S.erase(it);
-                }
-                break;
-            }
-            if (it->r <= r){
-                del(it->l, it->r, it->val);
-                it = S.erase(it);
-            }
-            else{
-                if (it->val == val){
-                    r = it->r;
-                    del(it->l, it->r, it->val);
-                    it = S.erase(it);
-                }
-                else{
-                    node n = *it;
-                    del(it->l, it->r, it->val);
-                    it = S.erase(it);
-                    it = S.emplace_hint(it, r, n.r, n.val);
-                    add(it->l, it->r, it->val);
-                }
-            }
-        }
-        if (it != S.begin()){
-            it = prev(it);
-            if (it->r == l){
-                if (it->val == val){
-                    l = it->l;
-                    del(it->l, it->r, it->val);
-                    it = S.erase(it);
-                }
-            }
-            else if (l < it->r){
-                if (it->val == val){
-                    l = min(l, it->l);
-                    r = max(r, it->r);
-                    del(it->l, it->r, it->val);
-                    it = S.erase(it);
-                }
-                else{
-                    if (r < it->r){
-                        it = S.emplace_hint(next(it), r, it->r, it->val);
-                        add(it->l, it->r, it->val);
-                        it = prev(it);
-                    }
-                    node n = *it;
-                    del(it->l, it->r, it->val);
-                    it = S.erase(it);
-                    it = S.emplace_hint(it, n.l, l, n.val);
-                    add(it->l, it->r, it->val);
-                }
-            }
-        }
-        if (it != S.end()) it = next(it);
-        it = S.emplace_hint(it, l, r, val);
-        add(it->l, it->r, it->val);
-    }
-
-    void update(T l, T r, V val){
-        update(l, r, val, [](T, T, V){}, [](T, T, V){});
-    }
-
-    template<typename ADDFUNC, typename DELFUNC> void insert(T l, T r, const ADDFUNC &add, const DELFUNC &del){
-        update(l, r, V(), add, del);
-    }
-
-    void insert(const T &l, const T &r){
-        update(l, r, V(), [](T, T, V){}, [](T, T, V){});
-    }
-
-    template<class ADDFUNC, class DELFUNC> void erase(T l, T r, const ADDFUNC &add, const DELFUNC &del){
-        auto it = S.lower_bound(node(l, 0, V()));
-        while (it != S.end() && it->l <= r){
-            if (it->l == r) break;
-            if (it->r <= r){
-                del(it->l, it->r, it->val);
-                it = S.erase(it);
-            }
-            else{
-                node n = *it;
-                del(it->l, it->r, it->val);
-                it = S.erase(it);
-                it = S.emplace_hint(it, r, n.r, n.val);
-                add(it->l, it->r, it->val);
-            }
-        }
-        if (it != S.begin()){
-            it = prev(it);
-            if (l < it->r){
-                if (r < it->r){
-                    it = S.emplace_hint(next(it), r, it->r, it->val);
-                    add(it->l, it->r, it->val);
-                    it = prev(it);
-                }
-                node n = *it;
-                del(it->l, it->r, it->val);
-                it = S.erase(it);
-                it = S.emplace_hint(it, n.l, l, n.val);
-                add(it->l, it->r, it->val);
-            }
-        }
-    }
-
-    void erase(const T &l, const T &r){
-        erase(l, r, [](T, T, V){}, [](T, T, V){});
-    }
-
-    friend ostream& operator<< (ostream &s, const intervalset &ins){
-        for (auto e : ins.S){
-            s << "([" << e.l << ", " << e.r << "): " << e.val << ") ";
-        }
-        return s;
+    int size() const{
+        return (int)st.size();
     }
 };
 
@@ -505,6 +529,31 @@ struct convex_hull{
         return hull;
     }
 
+};
+
+struct convex_hull_trick{
+    struct line{
+        ll a, b;
+        ll eval(ll x) const{
+            return a*x+b;
+        }
+    };
+
+    deque<line> dq;
+    bool bad(const line& l1, const line& l2, const line& l3){
+        return (__int128)(l3.b-l1.b)*(l1.a-l2.a) <= (__int128)(l2.b-l1.b)*(l1.a-l3.a);
+    }
+
+    void add(ll a, ll b){
+        line l{a, b};
+        while (dq.size() >= 2 && bad(dq[dq.size()-2], dq[dq.size()-1], l)) dq.pop_back();
+        dq.push_back(l);
+    }
+
+    ll query(ll x){
+        while ((int)dq.size() >= 2 && dq[0].eval(x) >= dq[1].eval(x)) dq.pop_front();
+        return dq[0].eval(x);
+    }
 };
 
 namespace tree{
@@ -617,7 +666,7 @@ private:
     T e;
     function<T(T, T)> op;
 public:
-    segtree(const vector<T>& A, T id, function<T(T, T)> op) : e(id), op(op){
+    segtree(const vector<T>& A, function<T(T, T)> op, T id) : e(id), op(op){
         n = A.size();
         size = 1;
         while (size < n) size <<= 1;
@@ -625,7 +674,8 @@ public:
         for (int i = 0; i < n; i++) seg[size+i] = A[i];
         for (int i = size-1; i > 0; i--) seg[i] = op(seg[i<<1], seg[i<<1|1]);
     }
-    segtree(int sz, T id, function<T(T, T)> op) : e(id), op(op){
+
+    segtree(int sz, function<T(T, T)> op, T id) : e(id), op(op){
         n = sz;
         size = 1;
         while (size < n) size <<= 1;
@@ -640,7 +690,11 @@ public:
         while (i >>= 1) seg[i] = op(seg[i<<1], seg[i<<1|1]);
     }
 
-    T prod(int l, int r){
+    T all_prod() const{
+        return seg[1];
+    }
+
+    T prod(int l, int r) const{
         T L = e, R = e;
         for (l += size, r += size; l < r; l >>= 1, r >>= 1){
             if (l&1) L = op(L, seg[l++]);
@@ -649,7 +703,11 @@ public:
         return op(L, R);
     }
 
-    T get(int i){
+    T get(int i) const{
+        return seg[size+i];
+    }
+
+    const T& operator [] (int i) const{
         return seg[size+i];
     }
 
@@ -657,7 +715,7 @@ public:
         set(i, get(i)+val);
     }
 
-    template<typename F> int max_right(int l, F f){
+    template<typename F> int max_right(int l, F f) const{
         if (l == n) return n;
         l += size;
         T sm = e;
@@ -679,7 +737,7 @@ public:
         return n;
     }
 
-    template<typename F> int min_left(int r, F f){
+    template<typename F> int min_left(int r, F f) const{
         if (r == 0) return 0;
         r += size;
         T sm = e;
@@ -1136,64 +1194,48 @@ public:
     }
 };
 
-class trietree{
-public:
-    static const int SIGMA = 256;
-    vector<array<int, SIGMA>> nxt;
-    vector<bool> is_end;
-    vector<int> cnt;
+template<typename T> struct cartesian_tree{
+    struct node{
+        T val;
+        int left = -1, right = -1, par = -1;
+    };
 
-    trietree(){
-        nxt.emplace_back();
-        nxt[0].fill(-1);
-        is_end.push_back(false);
-        cnt.push_back(0);
+    vector<node> tree;
+    int root = -1;
+    cartesian_tree(const vector<T>& a){
+        build(a);
     }
 
-    void insert(const string& s){
-        int v = 0;
-        for (unsigned char c : s){
-            if (nxt[v][c] == -1){
-                nxt[v][c] = nxt.size();
-                nxt.emplace_back();
-                nxt.back().fill(-1);
-                is_end.push_back(false);
-                cnt.push_back(0);
+    void build(const vector<T>& a){
+        int n = a.size();
+        tree.assign(n, node());
+        for (int i = 0; i < n; i++) tree[i].val = a[i];
+        stack<int> st;
+        for (int i = 0; i < n; i++){
+            int last = -1;
+            while (!st.empty() && tree[st.top()].val > a[i]){
+                last = st.top();
+                st.pop();
             }
-            v = nxt[v][c];
-            cnt[v]++;
+            if (!st.empty()){
+                tree[st.top()].right = i;
+                tree[i].par = st.top();
+            }
+            if (last != -1){
+                tree[i].left = last;
+                tree[last].par = i;
+            }
+            st.push(i);
         }
-        is_end[v] = true;
+        root = 0;
+        while (tree[root].par != -1) root = tree[root].par;
     }
 
-    bool search(const string& s) const{
-        int v = 0;
-        for (unsigned char c : s){
-            if (nxt[v][c] == -1) return false;
-            v = nxt[v][c];
-        }
-        return is_end[v];
-    }
-
-    bool starts_with(const string& s) const{
-        int v = 0;
-        for (unsigned char c : s){
-            if (nxt[v][c] == -1) return false;
-            v = nxt[v][c];
-        }
-        return true;
-    }
-
-    int max_lcp(const string& s) const{
-        int v = 0;
-        int depth = 0;
-        int ans = 0;
-        for (unsigned char c : s){
-            v = nxt[v][c];
-            depth++;
-            if (cnt[v] >= 2) ans = depth;
-        }
-        return ans;
+    void print(int v) const{
+        if (v == -1) return;
+        print(tree[v].left);
+        cout << tree[v].val << ' ';
+        print(tree[v].right);
     }
 };
 
@@ -1558,12 +1600,16 @@ struct tecc{
     int N;
     vector<vector<pair<int, int>>> G;
     vector<pair<int, int>> E;
-    vector<int> ord, low, comp;
+    vector<int> ord, low, comp_;
     vector<bool> is_bridge;
     int timer = 0;
 
-    tecc(int n) : N(n), G(n), ord(n, -1), low(n){}
-    
+    vector<vector<int>> groups_;
+    vector<vector<int>> tree_;
+    bool built = false;
+
+    tecc(int n) : N(n), G(n), ord(n, -1), low(n) {}
+
     void add_edge(int u, int v){
         int id = E.size();
         E.emplace_back(u, v);
@@ -1571,46 +1617,70 @@ struct tecc{
         G[v].emplace_back(u, id);
     }
 
-    void dfs(int n, int p = -1){
-        ord[n] = low[n] = timer++;
-        for (auto [i, id] : G[n]) if (id != p){
-            if (ord[i] != -1) low[n] = min(low[n], ord[i]);
+    void dfs(int v, int pe = -1){
+        ord[v] = low[v] = timer++;
+        for (auto [to, id] : G[v]){
+            if (id == pe) continue;
+            if (ord[to] != -1){
+                low[v] = min(low[v], ord[to]);
+            }
             else{
-                dfs(i, id);
-                low[n] = min(low[n], low[i]);
-                if (ord[n] < low[i]) is_bridge[id] = true;
+                dfs(to, id);
+                low[v] = min(low[v], low[to]);
+                if (ord[v] < low[to]) is_bridge[id] = true;
             }
         }
     }
 
-    vector<vector<int>> build(){
+    void build(){
+        if (built) return;
+        built = true;
         fill(ord.begin(), ord.end(), -1);
         timer = 0;
         is_bridge.assign(E.size(), false);
         for (int i = 0; i < N; i++) if (ord[i] == -1) dfs(i);
         dsu uf(N);
         for (int i = 0; i < (int)E.size(); i++){
-            if (is_bridge[i]) continue;
-            auto [u, v] = E[i];
-            uf.merge(u, v);
+            if (!is_bridge[i]){
+                auto [u, v] = E[i];
+                uf.merge(u, v);
+            }
         }
-        comp.resize(N);
-        vector<int> mp(N, -1);
+        comp_.resize(N);
+        map<int, int> mp;
         int idx = 0;
         for (int i = 0; i < N; i++){
             int r = uf.root(i);
-            if (mp[r] == -1) mp[r] = idx++;
-            comp[i] = mp[r];
+            if (!mp.count(r)) mp[r] = idx++;
+            comp_[i] = mp[r];
         }
-        vector<vector<int>> tree(idx);
+        groups_.assign(idx, {});
+        for (int i = 0; i < N; i++){
+            groups_[comp_[i]].push_back(i);
+        }
+        tree_.assign(idx, {});
         for (int i = 0; i < (int)E.size(); i++){
             if (!is_bridge[i]) continue;
             auto [u, v] = E[i];
-            int a = comp[u], b = comp[v];
-            tree[a].push_back(b);
-            tree[b].push_back(a);
+            int a = comp_[u], b = comp_[v];
+            tree_[a].push_back(b);
+            tree_[b].push_back(a);
         }
-        return tree;
+    }
+
+    const vector<int>& comp(){
+        build();
+        return comp_;
+    }
+
+    const vector<vector<int>>& groups(){
+        build();
+        return groups_;
+    }
+
+    const vector<vector<int>>& tree(){
+        build();
+        return tree_;
     }
 };
 
@@ -1886,7 +1956,7 @@ struct centroid_decomposition{
     centroid_decomposition(int n) : N(n), G(N), sz(N), removed(N, false), par(N, -1){}
 
     void add_edge(int u, int v){
-        
+
 G[u].push_back(v);
         G[v].push_back(u);
     }
@@ -2036,8 +2106,8 @@ ll modpow(ll a, ll e, ll mod = MOD){
     if (e == 0) return 1;
     ll res = 1;
     while (e){
-        if (e&1) res = res*a%mod;
-        a = a*a%mod;
+        if (e&1) res = modmul(res, a, mod);
+        a = modmul(a, a, mod);
         e >>= 1;
     }
     return res;
@@ -2066,6 +2136,37 @@ ull x = modpow(i, d, n);
         if (comp) return false;
     }
     return true;
+}
+
+
+ull pollard(ull n){
+    if (n % 2 == 0) return 2;
+    if (n % 3 == 0) return 3;
+    while (true){
+        ull c = uniform_int_distribution<ull>(1, n-1)(rng);
+        ull x = uniform_int_distribution<ull>(0, n-1)(rng);
+        ull y = x;
+        ull d = 1;
+        auto f = [&](ull v){ return ((unsigned __int128)v*v+c)%n; };
+        while (d == 1){
+            x = f(x);
+            y = f(f(y));
+            ull diff = x > y? x-y: y-x;
+            d = gcd(diff, n);
+        }
+        if (d != n) return d;
+    }
+}
+
+void prime_factor(ull n, vector<ull>& res){
+    if (n == 1) return;
+    if (isprime(n)){
+        res.push_back(n);
+        return;
+    }
+    ull d = pollard(n);
+    prime_factor(d, res);
+    prime_factor(n/d, res);
 }
 
 ll extgcd(ll a, ll b, ll& x, ll& y){
@@ -2100,17 +2201,17 @@ template<typename T> ll tentousuu(vector<T>& A){
     return res;
 }
 
-template<typename T> map<T, T> prime_factor(T N){
-    map<T, T> res;
-    for (T i = 2; i*i <= N && N > 1; i++){
-        while (N%i == 0){
-            res[i]++;
-            N /= i;
-        }
-    }
-    if (N > 1) res[N]++;
-    return res;
-}
+// template<typename T> map<T, T> prime_factor(T N){
+//     map<T, T> res;
+//     for (T i = 2; i*i <= N && N > 1; i++){
+//         while (N%i == 0){
+//             res[i]++;
+//             N /= i;
+//         }
+//     }
+//     if (N > 1) res[N]++;
+//     return res;
+// }
 
 template<typename T> T nc2(T n){
     return n*(n-1)/2;
@@ -2119,6 +2220,61 @@ template<typename T> T nc2(T n){
 template<typename T> T nc3(T n){
     return (n*(n-1)/2)*(n-2)/3;
 }
+
+struct segmented_sieve{
+    ll L, R;
+    vector<ll> primes;
+    vector<bool> is_prime_small, is_prime_segment;
+
+    segmented_sieve(ll l, ll r) : L(l), R(r){
+        build_small_primes();
+        build_segment();
+    }
+
+    void build_small_primes(){
+        ll limit = sqrtl(R)+1;
+        is_prime_small.assign(limit+1, true);
+        is_prime_small[0] = false;
+        is_prime_small[1] = false;
+        for (ll i = 2; i*i <= limit; i++){
+            if (is_prime_small[i]) for (ll j = i*i; j <= limit; j += i){
+                is_prime_small[j] = false;
+            }
+        }
+        for (ll i = 2; i <= limit; i++){
+            if (is_prime_small[i]) primes.push_back(i);
+        }
+    }
+
+    void build_segment(){
+        is_prime_segment.assign(R-L, true);
+        for (ll p : primes){
+            ll pp = p*p;
+            if (pp >= R) break;
+            ll start = max(pp, (L+p-1)/p*p);
+            for (ll x = start; x < R; x += p){
+                is_prime_segment[x-L] = false;
+            }
+        }
+        if (L == 0){
+            if (R > 0) is_prime_segment[0] = false;
+            if (R > 1) is_prime_segment[1-L] = false;
+        }
+        else if (L == 1){
+            is_prime_segment[0] = false;
+        }
+    }
+
+    vector<ll> get_primes(){
+        vector<ll> res;
+        for (ll i = 0; i < R-L; i++){
+            if (is_prime_segment[i]){
+                res.push_back(L+i);
+            }
+        }
+        return res;
+    }
+};
 
 struct comb{
     vector<ll> fact, invfact;
@@ -2165,7 +2321,7 @@ struct kitamasa{
     ll mod;
     vector<ll> C, A;
 
-    kitamasa(const vector<ll>& coef, const vector<ll>& init, ll m) : K((int)coef.size()), mod(m), C(coef), A(init) {}
+    kitamasa(const vector<ll>& coef, const vector<ll>& init, ll m) : K((int)coef.size()), mod(m), C(coef), A(init){}
 
     ll add(ll x, ll y) const{
         x += y;
@@ -2225,7 +2381,7 @@ public:
         if (res >= mod) res -= mod;
         return modint(res);
     }
-    
+
     modint operator - (const modint& other) const{
         ll res = value-other.value;
         if (res < 0) res += mod;
@@ -2271,7 +2427,7 @@ public:
         --(*this);
         return tmp;
     }
-    
+
     modint& operator *= (const modint& other){
         value = value*other.value%mod;
         return *this;
@@ -2518,7 +2674,7 @@ template<typename T> struct complex{
     complex operator * (const T x) const{
         return complex(real*x, imag*x);
     }
-    
+
     complex operator * (const complex& other) const{
         T r = real*other.real-imag*other.imag;
         T i = real*other.imag+imag*other.real;
@@ -2544,7 +2700,7 @@ template<typename T> struct complex{
         *this = *this-other;
         return *this;
     }
-    
+
     complex& operator *= (T x){
         (*this) = (*this)*x;
         return *this;
@@ -2728,7 +2884,7 @@ struct fps : vm{
 #undef s
 #undef d
 
-} 
+}
 
 namespace matrix{
 
@@ -2993,7 +3149,7 @@ struct waveletmatrix{
         vector<ll> cur = v, nxt(n);
         for (int level = LOG-1; level >= 0; level--){
             for (int i = 0; i < n; i++){
-                bit[level][i+1] = bit[level][i] + ((cur[i]>>level)&1);
+                bit[level][i+1] = bit[level][i]+((cur[i]>>level)&1);
             }
             int zero = 0;
             for (ll x: cur) if (!((x>>level)&1)) zero++;
@@ -3130,6 +3286,14 @@ template<typename T> struct sim{
 
 namespace strings{
 
+int lcp(const string& a, const string& b){
+    int n = min((int)a.size(), (int)b.size());
+    int i = 0;
+    while (i < n && a[i] == b[i]) i++;
+    return i;
+}
+
+
 bool iskaibun(string s){
     string t = s;
     reverse(t.begin(), t.end());
@@ -3167,7 +3331,7 @@ vector<int> manachar(const string& s){
 class rollinghash{
 private:
     const array<ll, 5> mod = {998244353, 1000000007, 1000000009, 1000000021, 1000000033};
-    const ll base = 100; 
+    const ll base = 100;
     vector<array<ll, 5>> hash, power;
 
 public:
@@ -3281,7 +3445,7 @@ public:
         }
         return left;
     }
-    
+
     int count(const string& t){
         return upper_bound(t)-lower_bound(t);
     }
@@ -3301,7 +3465,7 @@ struct segtree_rollinghash{
     node e = {{0, 0, 0, 0, 0}, 0};
     segtree<node> seg;
 
-    segtree_rollinghash(const string& s) : power(s.size()+1), op(nullptr), seg(build_init(s), e, [&](node a, node b){ return a; }){
+    segtree_rollinghash(const string& s) : power(s.size()+1), op(nullptr), seg(build_init(s), [&](node a, node b){ return a; }, e){
         int n = s.size();
         build_power(n);
         op = [&](node a, node b){
@@ -3314,7 +3478,7 @@ struct segtree_rollinghash{
             }
             return res;
         };
-        seg = segtree<node>(build_init(s), e, op);
+        seg = segtree<node>(build_init(s), op, e);
     }
 
     void build_power(int n){
@@ -3347,9 +3511,189 @@ struct segtree_rollinghash{
     }
 };
 
+struct str_trie{
+    struct node{
+        int count = 0, terminal_count = 0;
+        map<char, node*> to;
+    };
+
+    node* root;
+    str_trie(){ root = new node(); }
+    ~str_trie(){ clear(root); }
+    int size() const{ return root->count; }
+
+    template<typename F> void dfs(const F& f, node* v = nullptr, bool is_root = true){
+        if (v == nullptr) v = root;
+        f(v, is_root);
+        for (auto& [c, u] : v->to) dfs(f, u, false);
+    }
+
+    void insert(const string& s, int k = 1){
+        node* cur = root;
+        cur->count += k;
+        for (char c : s){
+            if (!cur->to.count(c)) cur->to[c] = new node();
+            cur = cur->to[c];
+            cur->count += k;
+        }
+        cur->terminal_count += k;
+    }
+
+    int count(const string& s) const{
+        node* cur = root;
+        for (char c : s){
+            if (!cur->to.count(c)) return 0;
+            cur = cur->to.at(c);
+        }
+        return cur->terminal_count;
+    }
+
+    bool contains(const string& s) const{
+        return count(s) > 0;
+    }
+
+    int prefix_count(const string& s) const{
+        node* cur = root;
+        for (char c : s){
+            if (!cur->to.count(c)) return 0;
+            cur = cur->to.at(c);
+        }
+        return cur->count;
+    }
+
+    bool starts_with(const string& s) const{
+        node* cur = root;
+        for (char c : s){
+            if (!cur->to.count(c)) return false;
+            cur = cur->to.at(c);
+        }
+        return true;
+    }
+
+    bool erase(const string& s, int k = 1){
+        int exist = count(s);
+        if (exist < k) return false;
+        vector<pair<node*, char>> path;
+        node* cur = root;
+        cur->count -= k;
+        for (char c : s){
+            path.push_back({cur, c});
+            cur = cur->to[c];
+            cur->count -= k;
+        }
+        cur->terminal_count -= k;
+        for (int i = (int)path.size()-1; i >= 0; i--){
+            node* parent = path[i].first;
+            char c = path[i].second;
+            node* child = parent->to[c];
+            if (child->count == 0){
+                delete child;
+                parent->to.erase(c);
+            }
+            else break;
+        }
+        return true;
+    }
+
+    void clear(node* v){
+        for (auto& [c, u] : v->to) clear(u);
+        delete v;
+    }
+};
+
 }
 
 namespace arrays{
+
+template<typename t> struct array_trie{
+    struct node{
+        int count = 0, terminal_count = 0;
+        map<t, node*> to;
+    };
+
+    node* root;
+    array_trie(){ root = new node(); }
+    ~array_trie(){ clear(root); }
+    int size() const{ return root->count; }
+
+    template<typename F> void dfs(const F& f, node* v = nullptr, bool is_root = true){
+        if (v == nullptr) v = root;
+        f(v, is_root);
+        for (auto& [c, u] : v->to) dfs(f, u, false);
+    }
+
+    void insert(const vector<t>& s, int k = 1){
+        node* cur = root;
+        cur->count += k;
+        for (t c : s){
+            if (!cur->to.count(c)) cur->to[c] = new node();
+            cur = cur->to[c];
+            cur->count += k;
+        }
+        cur->terminal_count += k;
+    }
+
+    int count(const vector<t>& s) const{
+        node* cur = root;
+        for (t c : s){
+            if (!cur->to.count(c)) return 0;
+            cur = cur->to.at(c);
+        }
+        return cur->terminal_count;
+    }
+
+    bool contains(const vector<t>& s) const{
+        return count(s) > 0;
+    }
+
+    int prefix_count(const vector<t>& s) const{
+        node* cur = root;
+        for (t c : s){
+            if (!cur->to.count(c)) return 0;
+            cur = cur->to.at(c);
+        }
+        return cur->count;
+    }
+
+    bool starts_with(const vector<t>& s) const{
+        node* cur = root;
+        for (t c : s){
+            if (!cur->to.count(c)) return false;
+            cur = cur->to.at(c);
+        }
+        return true;
+    }
+
+    bool erase(const vector<t>& s, int k = 1){
+        int exist = count(s);
+        if (exist < k) return false;
+        vector<pair<node*, t>> path;
+        node* cur = root;
+        cur->count -= k;
+        for (t c : s){
+            path.push_back({cur, c});
+            cur = cur->to[c];
+            cur->count -= k;
+        }
+        cur->terminal_count -= k;
+        for (int i = (int)path.size()-1; i >= 0; i--){
+            node* parent = path[i].first;
+            t c = path[i].second;
+            node* child = parent->to[c];
+            if (child->count == 0){
+                delete child;
+                parent->to.erase(c);
+            }
+            else break;
+        }
+        return true;
+    }
+
+    void clear(node* v){
+        for (auto& [c, u] : v->to) clear(u);
+        delete v;
+    }
+};
 
 class zobristrange{
 private:
@@ -3513,6 +3857,8 @@ using amint = atcoder::static_modint<MOD>;
 using mint = num::modint<MOD>;
 using num::modpow;
 using num::isprime;
+using strings::str_trie;
+template<typename T> using array_trie = arrays::array_trie<T>;
 // template<typename T> using cmp = num::complex<T>;
 template<typename T> using fenwicktree = tree::fenwicktree<T>;
 template<typename T> using lazy_fenwicktree = tree::lazy_fenwicktree<T>;
@@ -3525,7 +3871,7 @@ void solve();
 int main(){
     cin.tie(0)->sync_with_stdio(0);
     cout << fixed << setprecision(20);
-    // testcases = 1;
+    testcases = 1;
     // cin >> testcases;
     while (testcases--) solve();
     return 0;
