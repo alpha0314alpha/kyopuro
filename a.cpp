@@ -3871,7 +3871,7 @@ void solve();
 int main(){
     cin.tie(0)->sync_with_stdio(0);
     cout << fixed << setprecision(20);
-    testcases = 1;
+    // testcases = 1;
     // cin >> testcases;
     while (testcases--) solve();
     return 0;
@@ -3879,4 +3879,34 @@ int main(){
 
 #define int long long
 void solve(){
+    int H, W, N;
+    cin >> H >> W >> N;
+    map<int, vec<int>> A;
+    A[1].push_back(1);
+    while (N--){
+        int x, y;
+        cin >> x >> y;
+        A[x].push_back(y);
+    }
+    vec<int> L, R;
+    for (auto [_, a] : A){
+        L.push_back(*mine(nall(a)));
+        R.push_back(*maxe(nall(a)));
+    }
+
+    vv<int> dp(N, {INF, INF});
+    rep(i, N){
+        if (i == 0){
+            dp[i][0] = 2*(R[i]-1);
+            dp[i][1] = W-1;
+        }
+        else{
+            chmin(dp[i][0], dp[i-1][0]+2*(R[i]-1));
+            chmin(dp[i][0], dp[i-1][1]+W-1);
+            chmin(dp[i][1], dp[i-1][0]+W-1);
+            chmin(dp[i][1], dp[i-1][1]+2*(W-L[i]+1));
+        }
+    }
+
+    cout << min(dp[N-1][0], dp[N-1][1]+W-1) << endl;
 }
