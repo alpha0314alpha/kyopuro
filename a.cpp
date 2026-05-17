@@ -1,6 +1,89 @@
 #ifndef ONLINE_JUDGE
+#ifndef _GLIBCXX_NO_ASSERT
+#include <cassert>
+#endif
+#include <cctype>
+#include <cerrno>
+#include <cfloat>
+#include <ciso646>
+#include <climits>
+#include <clocale>
+#include <cmath>
+#include <csetjmp>
+#include <csignal>
+#include <cstdarg>
+#include <cstddef>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
+#if __cplusplus >= 201103L
+#include <ccomplex>
+#include <cfenv>
+#include <cinttypes>
+#include <cstdalign>
+#include <cstdbool>
+#include <cstdint>
+#include <ctgmath>
+#include <cwchar>
+#include <cwctype>
+#endif
+// C++
+#include <algorithm>
+#include <bitset>
+#include <complex>
+#include <deque>
+#include <exception>
+#include <fstream>
+#include <functional>
+#include <iomanip>
+#include <ios>
+#include <iosfwd>
+#include <iostream>
+#include <istream>
+#include <iterator>
+#include <limits>   
+#include <list>
+#include <locale>
+#include <map>
+#include <memory>
+#include <new>
+#include <numeric>
+#include <ostream>
+#include <queue>
+#include <set>
+#include <sstream>
+#include <stack>
+#include <stdexcept>
+#include <streambuf>
+#include <string>
+#include <typeinfo>
+#include <utility>
+#include <valarray>
+#include <vector>
+#if __cplusplus >= 201103L
+#include <array>
+#include <atomic>
+#include <chrono>
+#include <condition_variable>
+#include <forward_list>
+#include <future>
+#include <initializer_list>
+#include <mutex>
+#include <random>
+#include <ratio>
+#include <regex>
+#include <scoped_allocator>
+#include <system_error>
+#include <thread>
+#include <tuple>
+#include <typeindex>
+#include <type_traits>
+#include <unordered_map>
+#include <unordered_set>
+#endif
 #define _GLIBCXX_DEBUG
-#include <bits/stdc++.h>
+// #include <bits/stdc++.h>
 #include "ac-library/atcoder/all"
 int testcases = 10;
 #else
@@ -14,8 +97,9 @@ int testcases = 1;
 #pragma GCC optimize("unroll-loops")
 
 // #define MOD 1000000007ll
-#define MOD 998244353ll
+// #define MOD 998244353ll
 // #define MOD 10007ll
+#define MOD 10000ll
 #define INF (long long)4e18
 #define EPS 1e-14
 #define lb lower_bound
@@ -42,6 +126,7 @@ int testcases = 1;
 #define yes cout<<"Yes"<<endl
 #define no cout<<"No"<<endl
 #define yesno(a) cout<<(a?"Yes":"No")<<endl
+#define alicebob(a) cout<<(a?"Alice":"Bob")<<endl
 #define sanko(a, b, c) (a? b: c)
 #define ci cin
 #define func function
@@ -656,6 +741,55 @@ public:
 
     T get(int i) const{
         return sum(i, i+1);
+    }
+};
+
+template<typename T> struct fenwicktree_2d{
+    int H, W;
+    vector<vector<T>> bit, a;
+
+    fenwicktree_2d(int h, int w) : H(h), W(w), bit(h, vector<T>(w, T())), a(h, vector<T>(w, T())) {}
+
+    void add(int x, int y, T v){
+        for (int i = x; i < H; i |= i+1){
+            for (int j = y; j < W; j |= j+1){
+                bit[i][j] += v;
+            }
+        }
+    }
+
+    void set(int x, int y, T v){
+        add(x, y, v-a[x][y]);
+        a[x][y] = v;
+    }
+
+    T get(int x, int y) const{
+        return a[x][y];
+    }
+
+    T _sum(int x, int y) const{
+        T res = T();
+        for (int i = x; i >= 0; i = (i&(i+1))-1){
+            for (int j = y; j >= 0; j = (j&(j+1))-1){
+                res += bit[i][j];
+            }
+        }
+        return res;
+    }
+
+    T sum(int x1, int y1, int x2, int y2) const{
+        x2--, y2--;
+        if (x1 > x2 || y1 > y2) return T();
+        T res = _sum(x2, y2);
+        if (x1 > 0) res -= _sum(x1-1, y2);
+        if (y1 > 0) res -= _sum(x2, y1-1);
+        if (x1 > 0 && y1 > 0) res += _sum(x1-1, y1-1);
+        return res;
+    }
+
+    void clear() {
+        for (auto& v : bit) fill(v.begin(), v.end(), T());
+        for (auto& v : a) fill(v.begin(), v.end(), T());
     }
 };
 
@@ -1359,6 +1493,52 @@ public:
     }
 };
 
+struct rollback_dsu{
+    vector<int> par, sz;
+    stack<tuple<int, int, int>> history;
+
+    rollback_dsu(int n){
+        par.resize(n);
+        sz.assign(n, 1);
+        iota(par.begin(), par.end(), 0);
+    }
+
+    int root(int x){
+        while (par[x] != x) x = par[x];
+        return x;
+    }
+
+    bool same(int x, int y){
+        return root(x) == root(y);
+    }
+
+    int size(int x){
+        return sz[root(x)];
+    }
+
+    bool merge(int x, int y){
+        x = root(x), y = root(y);
+        if (x == y){
+            history.emplace(-1, -1, -1);
+            return false;
+        }
+        if (sz[x] < sz[y]) swap(x, y);
+        history.emplace(y, par[y], sz[x]);
+        par[y] = x;
+        sz[x] += sz[y];
+        return true;
+    }
+
+    void rollback(){
+        auto [y, p, x] = history.top();
+        history.pop();
+        if (y == -1) return;
+        int a = par[y];
+        par[y] = p;
+        sz[a] = x;
+    }
+};
+
 struct persistent_dsu{
     tree::persistent_segtree<int> seg;
     int n;
@@ -2059,32 +2239,32 @@ struct dsu_ontree{
     }
 };
 
-struct dynamic_dsu{
-    map<int, int> parent;
-    map<int, int> sz;
+template<typename T> struct map_dsu{
+    map<T, int> parent;
+    map<T, int> sz;
 
-    void ensure(int x){
+    void ensure(T x){
         if (!parent.count(x)){
             parent[x] = x;
             sz[x] = 1;
         }
     }
 
-    int root(int x){
+    T root(T x){
         ensure(x);
         if (parent[x] == x) return x;
         return parent[x] = root(parent[x]);
     }
 
-    int size(int x){
+    int size(T x){
         return sz[root(x)];
     }
 
-    bool same(int x, int y){
+    bool same(T x, T y){
         return root(x) == root(y);
     }
 
-    void merge(int x, int y){
+    void merge(T x, T y){
         x = root(x);
         y = root(y);
         if (x == y) return;
@@ -2115,15 +2295,15 @@ ll modpow(ll a, ll e, ll mod = MOD){
 
 bool isprime(ll n){
     if (n < 2) return false;
-    vector<ull> small = {2ull, 3ull, 5ull, 7ull, 11ull, 13ull, 17ull, 19ull, 23ull, 29ull};
-    vector<ull> large = {2ull, 325ull, 9375ull, 28178ull, 450775ull, 9780504ull, 1795265022ull};
-    for (ull i : small) if (n%i == 0) return n == i;
-    ull d = n-1;
+    vector<ll> small = {2ll, 3ll, 5ll, 7ll, 11ll, 13ll, 17ll, 19ll, 23ll, 29ll};
+    vector<ll> large = {2ll, 325ll, 9375ll, 28178ll, 450775ll, 9780504ll, 1795265022ll};
+    for (ll i : small) if (n%i == 0) return n == i;
+    ll d = n-1;
     int s = 0;
     while ((d&1) == 0) d >>= 1, s++;
-    for (ull i : large){
+    for (ll i : large){
         if (i%n == 0) continue;
-ull x = modpow(i, d, n);
+        ll x = modpow(i, d, n);
         if (x == 1 || x == n-1) continue;
         bool comp = true;
         for (int j = 1; j < s; j++){
@@ -2139,34 +2319,51 @@ ull x = modpow(i, d, n);
 }
 
 
-ull pollard(ull n){
+ll pollard(ll n){
     if (n % 2 == 0) return 2;
     if (n % 3 == 0) return 3;
     while (true){
-        ull c = uniform_int_distribution<ull>(1, n-1)(rng);
-        ull x = uniform_int_distribution<ull>(0, n-1)(rng);
-        ull y = x;
-        ull d = 1;
-        auto f = [&](ull v){ return ((unsigned __int128)v*v+c)%n; };
+        ll c = uniform_int_distribution<ll>(1, n-1)(rng);
+        ll x = uniform_int_distribution<ll>(0, n-1)(rng);
+        ll y = x;
+        ll d = 1;
+        auto f = [&](ll v){ return ((unsigned __int128)v*v+c)%n; };
         while (d == 1){
             x = f(x);
             y = f(f(y));
-            ull diff = x > y? x-y: y-x;
+            ll diff = x > y? x-y: y-x;
             d = gcd(diff, n);
         }
         if (d != n) return d;
     }
 }
 
-void prime_factor(ull n, vector<ull>& res){
+void prime_factor_internal(ll n, vector<ll>& res){
     if (n == 1) return;
     if (isprime(n)){
         res.push_back(n);
         return;
     }
-    ull d = pollard(n);
-    prime_factor(d, res);
-    prime_factor(n/d, res);
+    ll d = pollard(n);
+    prime_factor_internal(d, res);
+    prime_factor_internal(n/d, res);
+}
+
+vector<ll> prime_factor(ll n){
+    vector<ll> res;
+    prime_factor_internal(n, res);
+    sort(res.begin(), res.end());
+    return res;
+}
+
+vector<ll> calc_divisor(ll N){
+    vector<ll> res;
+    for (ll i = 1ll; i*i <= N; i++) if (N%i == 0){
+        res.push_back(i);
+        if (i*i != N) res.push_back(N/i);
+    }
+    sort(res.begin(), res.end());
+    return res;
 }
 
 ll extgcd(ll a, ll b, ll& x, ll& y){
@@ -2888,6 +3085,23 @@ struct fps : vm{
 
 namespace matrix{
 
+template<typename T> struct prefsum_2d{
+    int H, W;
+    vector<vector<T>> S;
+
+    prefsum_2d(const vector<vector<int>>& A) : H((int)A.size()), W((int)A[0].size()){
+        for (const auto& a : A) assert((int)A[0].size() == W);
+        S.assign(H+1, vector<T>(W+1));
+        for (int i = 1; i <= H; i++) for (int j = 1; j <= W; j++){
+            S[i][j] = A[i-1][j-1]+S[i][j-1]+S[i-1][j]-S[i-1][j-1];
+        }
+    }
+
+    T sum(int h1, int w1, int h2, int w2) const{
+        return S[h2][w2]-S[h1][w2]-S[h2][w1]+S[h1][w1];
+    }
+};
+
 template<typename T> class matrix{
 private:
 public:
@@ -3278,7 +3492,7 @@ template<typename T> struct sim{
     }
 
     T sum(int l, int r){
-        return _sum(r-1) - _sum(l-1);
+        return _sum(r-1)-_sum(l-1);
     }
 };
 
@@ -3327,6 +3541,75 @@ vector<int> manachar(const string& s){
     }
     return r;
 }
+
+struct aho{
+    struct node{
+        int next[26];
+        int fail, par;
+        bool bad;
+
+        node(){
+            memset(next, -1, sizeof(next));
+            fail = 0;
+            par = -1;
+            bad = false;
+        }
+    };
+
+    vector<node> T;
+
+    aho(){
+        T.emplace_back();
+    }
+
+    node operator [] (int i) const{
+        return T[i];
+    }
+
+    int size() const{
+        return (int)T.size();
+    }
+
+    int add(string S){
+        int v = 0;
+        for (char c : S){
+            int b = c-'a';
+            if (T[v].next[b] == -1){
+                T[v].next[b] = T.size();
+                T.emplace_back();
+                T.back().par = v;
+            }
+            v = T[v].next[b];
+        }
+        T[v].bad = true;
+        return v;
+    }
+
+    void build(){
+        queue<int> Q;
+        for (int i = 0; i < 26; i++){
+            int u = T[0].next[i];
+            if (u == -1) T[0].next[i] = 0;
+            else{
+                T[u].fail = 0;
+                Q.push(u);
+            }
+        }
+        while (!Q.empty()){
+            int v = Q.front();
+            Q.pop();
+            T[v].bad |= T[T[v].fail].bad;
+            for (int i = 0; i < 26; i++){
+                int u = T[v].next[i];
+                if (u == -1) T[v].next[i] = T[T[v].fail].next[i];
+                else{
+                    T[u].fail = T[T[v].fail].next[i];
+                    Q.push(u);
+                }
+            }
+        }
+    }
+};
 
 class rollinghash{
 private:
@@ -3857,6 +4140,8 @@ using amint = atcoder::static_modint<MOD>;
 using mint = num::modint<MOD>;
 using num::modpow;
 using num::isprime;
+using num::prime_factor;
+using num::calc_divisor;
 using strings::str_trie;
 template<typename T> using array_trie = arrays::array_trie<T>;
 // template<typename T> using cmp = num::complex<T>;
@@ -3869,7 +4154,7 @@ template<typename T, typename U> using godtree = tree::godtree<T, U>;
 
 void solve();
 int main(){
-    cin.tie(0)->sync_with_stdio(0);
+    cin.tie(0)->sync_with_stdio(false);
     cout << fixed << setprecision(20);
     // testcases = 1;
     // cin >> testcases;
@@ -3879,34 +4164,4 @@ int main(){
 
 #define int long long
 void solve(){
-    int H, W, N;
-    cin >> H >> W >> N;
-    map<int, vec<int>> A;
-    A[1].push_back(1);
-    while (N--){
-        int x, y;
-        cin >> x >> y;
-        A[x].push_back(y);
-    }
-    vec<int> L, R;
-    for (auto [_, a] : A){
-        L.push_back(*mine(nall(a)));
-        R.push_back(*maxe(nall(a)));
-    }
-
-    vv<int> dp(N, {INF, INF});
-    rep(i, N){
-        if (i == 0){
-            dp[i][0] = 2*(R[i]-1);
-            dp[i][1] = W-1;
-        }
-        else{
-            chmin(dp[i][0], dp[i-1][0]+2*(R[i]-1));
-            chmin(dp[i][0], dp[i-1][1]+W-1);
-            chmin(dp[i][1], dp[i-1][0]+W-1);
-            chmin(dp[i][1], dp[i-1][1]+2*(W-L[i]+1));
-        }
-    }
-
-    cout << min(dp[N-1][0], dp[N-1][1]+W-1) << endl;
 }
