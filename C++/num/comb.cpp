@@ -37,4 +37,14 @@ public:
         if (n <= 0 || r < 0 || n+r-1 > size) return 0;
         return ncr(n+r-1, r);
     }
+
+    ll ncr_large(int n, int r){
+        ll res = 1;
+        for (int i = 0; i < r; i++){
+            res *= n-i;
+            res %= mod;
+        }
+        res *= invfact[r];
+        return res;
+    }
 };
