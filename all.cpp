@@ -42,7 +42,7 @@
 #include <iostream>
 #include <istream>
 #include <iterator>
-#include <limits>   
+#include <limits>
 #include <list>
 #include <locale>
 #include <map>
