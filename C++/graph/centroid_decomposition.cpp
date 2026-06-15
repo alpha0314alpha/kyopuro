@@ -7,8 +7,7 @@ struct centroid_decomposition{
     centroid_decomposition(int n) : N(n), G(N), sz(N), removed(N, false), par(N, -1){}
 
     void add_edge(int u, int v){
-        
-G[u].push_back(v);
+        G[u].push_back(v);
         G[v].push_back(u);
     }
 
