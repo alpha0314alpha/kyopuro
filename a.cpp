@@ -113,7 +113,7 @@ int testcases = 1;
 #define maxe max_element
 #define mine min_element
 #define accu accumulate
-#define popcount __builtin_popcount
+#define popcount __builtin_popcountll
 #define clzll __builtin_clzll
 #define elif else if
 #define nall(A) A.begin(), A.end()
@@ -140,6 +140,7 @@ using ull = unsigned long long;
 using lll = __int128;
 using ld = long double;
 using pll = pair<long long, long long>;
+using mint = atcoder::static_modint<MOD>;
 template<typename T> using pq = priority_queue<T>;
 template<typename T> using pqg = priority_queue<T, vector<T>, greater<T>>;
 template<typename T> using vec = vector<T>;
@@ -188,12 +189,30 @@ const ll tens[19] = {
     1000000000000000000ll,
 };
 
-template<typename T> void chmin(T& x, T y){
-    x = min(x, y);
+template<typename T> bool chmin(T& x, T y){
+    if (x > y){
+        x = y;
+        return true;
+    }
+    return false;
 }
 
-template<typename T> void chmax(T& x, T y){
-    x = max(x, y);
+template<typename T> bool chmax(T& x, T y){
+    if (x < y){
+        x = y;
+        return true;
+    }
+    return false;
+}
+
+template<typename T> vector<pair<int, T>> enumerate(const vector<T>& V){
+    vector<pair<int, T>> res;
+    for (const T& i : V) res.emplace_back((int)res.size(), i);
+    return res;
+}
+
+ostream& operator << (ostream& os, const mint& x){
+    return os << x.val();
 }
 
 template<typename T> istream& operator >> (istream& is, deque<T>& v){
@@ -723,6 +742,10 @@ public:
         if (r < n) add(bit1, r, -x);
         add(bit2, l, x*l);
         if (r < n) add(bit2, r, -x*r);
+    }
+
+    void add(int i, T x){
+        apply(i, i+1, x);
     }
 
     T prefix_sum(int r) const{
@@ -1881,74 +1904,57 @@ struct tecc{
     }
 };
 
-template<typename T> class rerooting{
-private:
-    int V;
+
+template<class S> struct rerooting{
+    int N;
     vector<vector<int>> G;
-    vector<vector<T>> dp;
-    function<T(T, int)> f, g;
-    function<T(T, T)> merge;
-    T id;
-public:
-    rerooting(){}
-    rerooting(int V, function<T(T, int)> f, function<T(T, T)> merge, T id, function<T(T, int)> g) : V(V), f(f), merge(merge), id(id), g(g){
-        G.resize(V);
-        dp.resize(V);
-    }
+    vector<S> dp, ans;
+    S e;
+    function<S(S, S)> op;
+    function<S(S, int)> add_root;
+
+    rerooting(int n, function<S(S, S)> op, function<S(S, int)> add_root, S e) : N(n), G(n), dp(n), ans(n), e(e), op(op), add_root(add_root) {}
 
     void add_edge(int u, int v){
         G[u].push_back(v);
         G[v].push_back(u);
     }
 
-    T dfs1(int n, int p){
-        T res = id;
-        for (int i = 0; i < G[n].size(); i++){
-            if (G[n][i] == p) continue;
-            dp[n][i] = dfs1(G[n][i], n);
-            res = merge(res, f(dp[n][i], G[n][i]));
+    S dfs1(int v, int p){
+        S res = e;
+        for (int to : G[v]) if (to != p){
+            S child = dfs1(to, v);
+            res = op(res, child);
         }
-        return g(res, n);
+        return dp[v] = add_root(res, v);
     }
 
-    void dfs2(int n, int p, T from_par){
-        for (int i = 0; i < G[n].size(); i++){
-            if (G[n][i] == p){
-                dp[n][i] = from_par;
-                break;
-            }
+    void dfs2(int v, int p, S from){
+        int m = G[v].size();
+        vector<S> pre(m+1, e), suf(m+1, e);
+        for (int i = 0; i < m; i++){
+            int to = G[v][i];
+            S val = (to == p? from: dp[to]);
+            pre[i+1] = op(pre[i], val);
         }
-        vector<T> pr(G[n].size()+1);
-        pr[G[n].size()] = id;
-        for (int i = G[n].size(); i > 0; i--){
-            pr[i-1] = merge(pr[i], f(dp[n][i-1], G[n][i-1]));
+        for (int i = m-1; i >= 0; i--){
+            int to = G[v][i];
+            S val = (to == p? from: dp[to]);
+            suf[i] = op(suf[i+1], val);
         }
-        T pl = id;
-        for (int i = 0; i < G[n].size(); i++){
-            if (G[n][i] != p){
-                T val = merge(pl, pr[i+1]);
-                dfs2(G[n][i], n, g(val, n));
-            }
-            pl = merge(pl, f(dp[n][i], G[n][i]));
+        ans[v] = add_root(pre[m], v);
+        for (int i = 0; i < m; i++){
+            int to = G[v][i];
+            if (to == p) continue;
+            S wo = op(pre[i], suf[i+1]);
+            dfs2(to, v, add_root(wo, v));
         }
     }
 
-    void build(int root = 0){
-        for (int i = 0; i < V; i++) dp[i].resize(G[i].size());
+    vector<S> build(int root = 0){
         dfs1(root, -1);
-        dfs2(root, -1, id);
-    }
-
-    T solve(int n){
-        T ans = id;
-        for (int i = 0; i < G[n].size(); i++){
-            ans = merge(ans, f(dp[n][i], G[n][i]));
-        }
-        return g(ans, n);
-    }
-
-    const vector<vector<T>>& get_dp() const{
-        return dp;
+        dfs2(root, -1, e);
+        return ans;
     }
 };
 
@@ -2086,62 +2092,138 @@ template<typename T, typename C> struct mincostflow{
 };
 
 struct hld{
-    int N, cur;
+    int N, timer = 0;
     vector<vector<int>> G;
-    vector<int> parent, depth, heavy, head, pos, sz;
+    vector<int> parent, depth, sz, heavy;
+    vector<int> head, in, outt, rev;
 
-    hld(int n) : N(n), G(n), parent(n), depth(n), heavy(n, -1), head(n), pos(n), sz(n){}
+    hld(int n) : N(n), G(n), parent(n, -1), depth(n), sz(n), heavy(n, -1), head(n), in(n), outt(n), rev(n) {}
 
     void add_edge(int u, int v){
         G[u].push_back(v);
         G[v].push_back(u);
     }
 
-    int dfs(int n, int p){
-        parent[n] = p;
-        sz[n] = 1;
-        int maxsz = 0;
-        for (int i : G[n]) if (i != p){
-            depth[i] = depth[n]+1;
-            int sub = dfs(i, n);
-            sz[n] += sub;
-            if (sub > maxsz){
-                maxsz = sub;
-                heavy[n] = i;
-            }
+    void dfs_sz(int v, int p){
+        parent[v] = p, sz[v] = 1;
+        int mx = 0;
+        for (int to : G[v]) if (to != p){
+            depth[to] = depth[v]+1;
+            dfs_sz(to, v);
+            sz[v] += sz[to];
+            if (sz[to] > mx) mx = sz[to], heavy[v] = to;
         }
-        return sz[n];
     }
 
-    void decompose(int n, int h){
-        head[n] = h, pos[n] = cur++;
-        if (heavy[n] != -1) decompose(heavy[n], h);
-        for (int to : G[n]) if (to != parent[n] && to != heavy[n]) decompose(to, to);
+    void dfs_hld(int v, int h){
+        head[v] = h, in[v] = timer, rev[timer++] = v;
+        if (heavy[v] != -1) dfs_hld(heavy[v], h);
+        for (int to : G[v]) if (to != parent[v] && to != heavy[v]) dfs_hld(to, to);
+        outt[v] = timer;
     }
 
     void build(int root = 0){
-        cur = 0;
+        timer = 0;
         depth[root] = 0;
-        dfs(root, -1);
-        decompose(root, root);
+        dfs_sz(root, -1);
+        dfs_hld(root, root);
     }
 
-    template<class F> void query(int u, int v, const F& f){
+    int lca(int u, int v) const{
         while (head[u] != head[v]){
-            if (depth[head[u]] < depth[head[v]]) swap(u, v);
-            f(pos[head[u]], pos[u]);
-            u = parent[head[u]];
-        }
-        if (depth[u] > depth[v]) swap(u, v);
-        f(pos[u], pos[v]);
-    }
-
-    int lca(int u, int v){
-        while (head[u] != head[v]){
-            if (depth[head[u]] < depth[head[v]]) swap(u, v);
-            u = parent[head[u]];
+            if (depth[head[u]] > depth[head[v]]) u = parent[head[u]];
+            else v = parent[head[v]];
         }
         return depth[u] < depth[v]? u: v;
+    }
+
+    int dist(int u, int v) const{
+        int w = lca(u, v);
+        return depth[u]+depth[v]-2*depth[w];
+    }
+
+    int kth_ancestor(int v, int k) const{
+        while (v != -1){
+            int h = head[v];
+            if (in[v]-in[h] >= k) return rev[in[v]-k];
+            k -= in[v]-in[h]+1;
+            v = parent[h];
+        }
+        return -1;
+    }
+
+    int jump(int u, int v, int k) const{
+        int w = lca(u, v);
+        int du = depth[u]-depth[w], dv = depth[v]-depth[w];
+        if (k > du+dv) return -1;
+        if (k <= du) return kth_ancestor(u, k);
+        k -= du;
+        return kth_ancestor(v, dv-k);
+    }
+
+    bool is_ancestor(int u, int v) const{
+        return in[u] <= in[v] && outt[v] <= outt[u];
+    }
+
+    pair<int, int> subtree(int v) const{
+        return make_pair(in[v], outt[v]);
+    }
+
+    int edge_pos(int u, int v) const{
+        return depth[u] > depth[v]? in[u]: in[v];
+    }
+
+    int pos(int v) const{
+        return in[v];
+    }
+
+    template<class F> void path_vertices(int u, int v, F f) const{
+        while (head[u] != head[v]){
+            if (depth[head[u]] > depth[head[v]]){
+                f(in[head[u]], in[u]+1);
+                u = parent[head[u]];
+            }
+            else{
+                f(in[head[v]], in[v]+1);
+                v = parent[head[v]];
+            }
+        }
+        if (depth[u] > depth[v]) swap(u, v);
+        f(in[u], in[v]+1);
+    }
+
+    template<class F> void path_edges(int u, int v, F f) const{
+        while (head[u] != head[v]){
+            if (depth[head[u]] > depth[head[v]]){
+                f(in[head[u]], in[u]+1);
+                u = parent[head[u]];
+            }
+            else{
+                f(in[head[v]], in[v]+1);
+                v = parent[head[v]];
+            }
+        }
+        if (depth[u] > depth[v]) swap(u, v);
+        if (u != v) f(in[u]+1, in[v]+1);
+    }
+
+    template<class F> void path_vertices_ordered(int u, int v, F f) const{
+        vector<pair<int, int>> left, right;
+        while (head[u] != head[v]){
+            if (depth[head[u]] > depth[head[v]]){
+                left.emplace_back(in[head[u]], in[u]);
+                u = parent[head[u]];
+            }
+            else{
+                right.emplace_back(in[head[v]], in[v]);
+                v = parent[head[v]];
+            }
+        }
+        if (depth[u] > depth[v]) left.emplace_back(in[v], in[u]);
+        else right.emplace_back(in[u], in[v]);
+        for (auto [l, r] : left) f(r, l, true);
+        reverse(right.begin(), right.end());
+        for (auto [l, r] : right) f(l, r, false);
     }
 };
 
@@ -2257,7 +2339,7 @@ struct dsu_ontree{
 };
 
 template<typename T> struct map_dsu{
-    map<T, int> parent;
+    map<T, T> parent;
     map<T, int> sz;
 
     void ensure(T x){
@@ -2539,6 +2621,7 @@ public:
             res %= mod;
         }
         res *= invfact[r];
+        res %= mod;
         return res;
     }
 };
@@ -2980,7 +3063,7 @@ namespace fps{
 
 #if MOD == 998244353
 using atcoder::convolution;
-using mint = atcoder::modint998244353;
+// using mint = atcoder::modint998244353;
 using vm = vector<mint>;
 #define d (*this)
 #define s int(vm::size())
@@ -3375,7 +3458,7 @@ public:
 
     matrix& operator *= (const matrix& B){
         assert(sz == B.sz);
-        *this = (*this) *B;
+        *this = (*this)*B;
         return *this;
     }
 
@@ -3443,7 +3526,7 @@ public:
 
     minplus_matrix& operator *= (const minplus_matrix& B){
         assert(sz == B.sz);
-        *this = (*this) *B;
+        *this = (*this)*B;
         return *this;
     }
 
@@ -3451,8 +3534,8 @@ public:
         minplus_matrix base = *this;
         minplus_matrix R = identity(sz);
         while (n > 0){
-            if (n&1) R = R * base;
-            base = base * base;
+            if (n&1) R = R*base;
+            base = base*base;
             n >>= 1;
         }
         return R;
@@ -3495,7 +3578,7 @@ template<typename T> struct dst{
     function<T(T, T)> op;
     T e;
 
-    dst(const vector<T>& v, T e, function<T(T, T)> op) : A(v), op(op), e(e){
+    dst(const vector<T>& v, function<T(T, T)> op, T e) : A(v), op(op), e(e){
         N = A.size(), K = 0;
         while ((1<<K) < N) K++;
         table.assign(K, vector<T>(N));
@@ -4317,9 +4400,8 @@ public:
 
 }
 
-using namespace fps;
-using amint = atcoder::static_modint<MOD>;
-using mint = num::modint<MOD>;
+// using amint = atcoder::static_modint<MOD>;
+// using mint = num::modint<MOD>;
 using num::modpow;
 using num::isprime;
 using num::prime_factor;
