@@ -1,3 +1,24 @@
+#if !__INCLUDE_LEVEL__
+#include __FILE__ 
+
+void solve(){
+}
+
+signed main(){
+    cin.tie(0)->sync_with_stdio(false);
+    cout << fixed << setprecision(20);
+    // testcases = 1;
+    // cin >> testcases;
+    while (testcases--) solve();
+    // return 0;
+}
+#else
+
+#define MOD 1000000007ll
+// #define MOD 998244353ll
+// #define MOD 10007ll
+// #define MOD 10000ll
+
 #include <inttypes.h>
 #ifndef ONLINE_JUDGE
 #ifndef _GLIBCXX_NO_ASSERT
@@ -97,10 +118,6 @@ int testcases = 1;
 #pragma GCC optimize("O3")
 #pragma GCC optimize("unroll-loops")
 
-// #define MOD 1000000007ll
-#define MOD 998244353ll
-// #define MOD 10007ll
-// #define MOD 10000ll
 #define INF (long long)4e18
 #define EPS 1e-14
 #define lb lower_bound
@@ -121,7 +138,7 @@ int testcases = 1;
 #define rep(i, n) for(int i = 0; i < (n); i++)
 #define replr(i, l, r) for (int i = l; i < r; i++)
 #define rrep(i, n) for(int i = (n)-1; i >= 0; i--)
-#define each(i, a) for(auto& i : a)
+#define each(i, a) for(auto&& i : a)
 #define unless(a) if (!(a))
 #define out(x, y) (!(0 <= x && x < H && 0 <= y && y < W))
 #define yes cout<<"Yes"<<endl
@@ -2392,8 +2409,6 @@ ll modpow(ll a, ll e, ll mod = MOD){
     return res;
 }
 
-
-
 bool isprime(ll n){
     if (n < 2) return false;
     vector<ll> small = {2ll, 3ll, 5ll, 7ll, 11ll, 13ll, 17ll, 19ll, 23ll, 29ll};
@@ -2419,10 +2434,9 @@ bool isprime(ll n){
     return true;
 }
 
-
 ll pollard(ll n){
-    if (n % 2 == 0) return 2;
-    if (n % 3 == 0) return 3;
+    if (n%2 == 0) return 2;
+    if (n%3 == 0) return 3;
     while (true){
         ll c = uniform_int_distribution<ll>(1, n-1)(rng);
         ll x = uniform_int_distribution<ll>(0, n-1)(rng);
@@ -2574,12 +2588,11 @@ struct segmented_sieve{
     }
 };
 
-class comb{
-private:
+struct comb{
     vector<ll> fact, invfact;
     ll mod;
     int size;
-public:
+
     comb(int n, ll m){
         mod = m, size = n;
         fact.resize(size+1);
@@ -3316,7 +3329,7 @@ namespace sps{
         return C;
     }
 
-    vector<ll> subset_convolution(vector<ll> A, vector<ll> B){
+    vector<ll>subset_convolution(vector<ll> A, vector<ll> B){
         int N = __builtin_ctz(A.size());
         int n = 1<<N;
         vector<vector<ll>> FA(N+1, vector<ll>(n, 0));
@@ -3565,8 +3578,8 @@ public:
     }
 
     T prod(int l, int r){
-        int j = log[r-l+1];
-        return op(st[l][j], st[r-(1<<j)+1][j]);
+        int j = log[r-l];
+        return op(st[l][j], st[r-(1<<j)][j]);
     }
 };
 
@@ -4416,16 +4429,5 @@ template<typename T, typename U> using lazy_segtree = tree::lazy_segtree<T, U>;
 template<typename T, typename U> using lazy_segatree = tree::lazy_segtree<T, U>;
 template<typename T, typename U> using godtree = tree::godtree<T, U>;
 
-void solve();
-int main(){
-    cin.tie(0)->sync_with_stdio(false);
-    cout << fixed << setprecision(20);
-    // testcases = 1;
-    // cin >> testcases;
-    while (testcases--) solve();
-    return 0;
-}
-
 #define int long long
-void solve(){
-}
+#endif
