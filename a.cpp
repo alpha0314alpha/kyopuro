@@ -14,8 +14,8 @@ signed main(){
 }
 #else
 
-#define MOD 1000000007ll
-// #define MOD 998244353ll
+// #define MOD 1000000007ll
+#define MOD 998244353ll
 // #define MOD 10007ll
 // #define MOD 10000ll
 
@@ -468,6 +468,47 @@ struct binary_trie{
             else v = T[v].ch[f^1];
         }
         return res;
+    }
+};
+
+template<class T> struct slope_trick{
+    T min_f = 0, lazy_l = 0, lazy_r = 0;
+    priority_queue<T, vector<T>, less<T>> L;
+    priority_queue<T, vector<T>, greater<T>> R;
+
+    T top_l() const{ return L.empty()? numeric_limits<T>::lowest(): L.top()+lazy_l; }
+    T top_r() const{ return R.empty()? numeric_limits<T>::max(): R.top()+lazy_r; }
+    void push_l(T x){ L.push(x-lazy_l); }
+    void push_r(T x){ R.push(x-lazy_r); }
+    void clear_l(){ while (!L.empty()) L.pop(); }
+    void clear_r(){ while (!R.empty()) R.pop(); }
+    void shift(T l, T r){ lazy_l -= l, lazy_r -= r; }
+    T get_min() const{ return min_f; }
+    pair<T, T> argmin() const{ return make_pair(top_l(), top_r()); }
+
+    void add_l(T a){
+        if (!R.empty() && a > top_r()){
+            min_f += a-top_r();
+            push_r(a);
+            push_l(top_r());
+            R.pop();
+        }
+        else push_l(a);
+    }
+
+    void add_r(T a){
+        if (!L.empty() && a < top_l()){
+            min_f += top_l() - a;
+            push_l(a);
+            push_r(top_l());
+            L.pop();
+        }
+        else push_r(a);
+    }
+
+    void add_abs(T a){
+        add_l(a);
+        add_r(a);
     }
 };
 
@@ -2105,6 +2146,39 @@ template<typename T, typename C> struct mincostflow{
             }
         }
         return {flow, cost};
+    }
+};
+
+template<class T> struct lower_bound_maxflow{
+    int N, SS, TT;
+    atcoder::mf_graph<T> G;
+    vector<T> bal;
+    lower_bound_maxflow(int n) : N(n), SS(n), TT(n+1), G(n+2), bal(N, T()) {}
+
+    void add_edge(int u, int v, T lo, T hi){
+        assert(lo <= hi);
+        G.add_edge(u, v, hi-lo);
+        bal[u] -= lo, bal[v] += lo;
+    }
+
+    bool build(int s, int t){
+        const T inf = numeric_limits<T>::max()/4;
+        G.add_edge(t, s, inf);
+        T sum = 0;
+        for (int i = 0; i < N; i++){
+            if (bal[i] > 0){
+                G.add_edge(SS, i, bal[i]);
+                sum += bal[i];
+            }
+            else if (bal[i] < 0){
+                G.add_edge(i, TT, -bal[i]);
+            }
+        }
+        return G.flow(SS, TT) == sum;
+    }
+
+    T flow(int s, int t){
+        return G.flow(s, t);
     }
 };
 
