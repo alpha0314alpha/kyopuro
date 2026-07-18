@@ -1,10 +1,8 @@
-template<typename T> class matrix{
-private:
+template<class T> struct matrix{
     using mat = vector<vector<T>>;
-public:
     int sz;
     mat A;
-    explicit matrix(int sz, T val = T()) : sz(sz), A(sz, vector<T>(sz, val)) {}
+    explicit matrix(int sz, T val = T()) : sz(sz), A(sz, vector<T>(sz, val)){}
 
     vector<T>& operator [] (int i){
         return A[i];
@@ -91,7 +89,7 @@ public:
 
     matrix& operator *= (const matrix& B){
         assert(sz == B.sz);
-        *this = (*this) *B;
+        *this = (*this)*B;
         return *this;
     }
 
@@ -105,4 +103,24 @@ public:
         }
         return R;
     }
+
+    matrix modpow(long long n, long long m) const{
+        matrix base = *this;
+        matrix R = identity(sz);
+        while (n > 0){
+            if (n&1){
+                R *= base;
+                for (int i = 0; i < base.sz; i++) for (int j = 0; j < base.sz; j++){
+                    R[i][j] %= m;
+                }
+            }
+            base *= base;
+            for (int i = 0; i < base.sz; i++) for (int j = 0; j < base.sz; j++){
+                base[i][j] %= m;
+            }
+            n >>= 1;
+        }
+        return R;
+    }
 };
+
