@@ -62,18 +62,18 @@ template<class S> struct dynamic_segtree{
     }
 
     template<class G>
-    long long max_right(long long l, G f) const {
+    ll max_right(ll l, G f) const {
         S sm = e();
         return max_right(root, L, R, l, f, sm);
     }
 
     template<class G>
-    long long min_left(long long r, G f) const {
+    ll min_left(ll r, G f) const {
         S sm = e();
         return min_left(root, L, R, r, f, sm);
     }
 
-    template<class G> long long max_right(Node* node, long long nl, long long nr, long long l, G f, S& sm) const{
+    template<class G> ll max_right(Node* node, ll nl, ll nr, ll l, G f, S& sm) const{
         if (nr <= l) return nr;
         if (!node){
             S nxt = op(sm, e());
@@ -89,13 +89,13 @@ template<class S> struct dynamic_segtree{
             }
             if (nr - nl == 1) return nl;
         }
-        long long mid = (nl+nr)>>1;
-        long long res = max_right(node->l, nl, mid, l, f, sm);
+        ll mid = (nl+nr)>>1;
+        ll res = max_right(node->l, nl, mid, l, f, sm);
         if (res != mid) return res;
         return max_right(node->r, mid, nr, l, f, sm);
     }
 
-    template<class G> long long min_left(Node* node, long long nl, long long nr, long long r, G f, S& sm) const{
+    template<class G> ll min_left(Node* node, ll nl, ll nr, ll r, G f, S& sm) const{
         if (nl >= r) return nl;
         if (!node){
             S nxt = op(e(), sm);
@@ -111,8 +111,8 @@ template<class S> struct dynamic_segtree{
             }
             if (nr-nl == 1) return nr;
         }
-        long long mid = (nl+nr)>>1;
-        long long res = min_left(node->l, nl, mid, r, f, sm);
+        ll mid = (nl+nr)>>1;
+        ll res = min_left(node->l, nl, mid, r, f, sm);
         if (res != mid) return res;
         return min_left(node->r, mid, nr, r, f, sm);
     }
