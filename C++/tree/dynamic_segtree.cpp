@@ -1,79 +1,119 @@
-template<typename T> class dynamic_segtree{
-private:
+template<class S> struct dynamic_segtree{
     struct Node{
-        T val;
+        S val;
         Node *l, *r;
-        Node(T v) : val(v), l(nullptr), r(nullptr) {}
+        Node(S v) : val(v), l(nullptr), r(nullptr) {}
     };
 
-    Node* root;
-    ll L, R;
-    function<T(T, T)> op;
-    function<T()> e;
-public:
-    dynamic_segtree(ll L, ll R, function<T(T,T)> op, function<T()> e) : L(L), R(R), op(op), e(e), root(nullptr) {}
+    Node* root = nullptr;
+    static constexpr ll L = -(1LL<<60);
+    static constexpr ll R = (1LL<<60);
+    function<S(S, S)> op;
+    function<S()> e;
+    dynamic_segtree(function<S(S, S)> op, function<S()> e) : op(op), e(e) {}
 
-    void set(ll pos, T x){
-        if (pos < L || pos >= R) return;
-        if (!root) root = new Node(e());
-        Node* node = root;
-        ll l = L, r = R;
-        vector<Node*> path;
-        while (true){
-            path.push_back(node);
-            if (r-l == 1) break;
-            ll mid = (l+r)/2;
-            if (pos < mid){
-                if (!node->l) node->l = new Node(e());
-                node = node->l;
-                r = mid;
-            }
-            else{
-                if (!node->r) node->r = new Node(e());
-                node = node->r;
-                l = mid;
-            }
+    void set(Node*& node, ll nl, ll nr, ll idx, S x){
+        if (!node) node = new Node(e());
+        if (nr-nl == 1){
+            node->val = x;
+            return;
         }
-        node->val = x;
-        for (int i = (int)path.size()-2; i >= 0; i--){
-            Node* cur = path[i];
-            T lv = cur->l? cur->l->val: e();
-            T rv = cur->r? cur->r->val: e();
-            cur->val = op(lv, rv);
-        }
+        ll mid = (nl+nr)>>1;
+        if (idx < mid) set(node->l, nl, mid, idx, x);
+        else set(node->r, mid, nr, idx, x);
+        S lv = node->l? node->l->val: e();
+        S rv = node->r? node->r->val: e();
+        node->val = op(lv, rv);
     }
 
-    T get(ll pos) const{
-        if (pos < L || pos >= R) return e();
-        if (!root) return e();
-        Node* node = root;
-        ll l = L, r = R;
-        while (node){
-            if (r-l == 1) return node->val;
-            ll mid = (l+r)/2;
-            if (pos < mid) node = node->l, r = mid;
-            else node = node->r, l = mid;
-        }
-        return e();
+    bool contains(Node* node, ll nl, ll nr, ll idx) const{
+        if (!node) return false;
+        if (nr-nl == 1) return true;
+        ll mid = (nl+nr)>>1;
+        if (idx < mid) return contains(node->l, nl, mid, idx);
+        else return contains(node->r, mid, nr, idx);
     }
 
-    T prod(ll ql, ll qr) const{
-        if (qr <= L || R <= ql) return e();
-        T res = e();
-        stack<tuple<Node*, ll, ll>> st;
-        st.emplace(root, L, R);
-        while (!st.empty()) {
-            auto [node, l, r] = st.top();
-            st.pop();
-            if (!node || r <= ql || qr <= l) continue;
-            if (ql <= l && r <= qr){
-                res = op(res, node->val);
-                continue;
-            }
-            ll mid = (l+r)/2;
-            st.emplace(node->l, l, mid);
-            st.emplace(node->r, mid, r);
+    S query(Node* node, ll nl, ll nr, ll ql, ll qr) const{
+        if (!node || nr <= ql || qr <= nl) return e();
+        if (ql <= nl && nr <= qr) return node->val;
+        ll mid = (nl+nr)>>1;
+        return op(query(node->l, nl, mid, ql, qr), query(node->r, mid, nr, ql, qr));
+    }
+
+    void set(ll idx, S x) {
+        set(root, L, R, idx, x);
+    }
+
+    bool contains(ll idx) const{
+        return contains(root, L, R, idx);
+    }
+
+    S prod(ll l, ll r) const {
+        return query(root, L, R, l, r);
+    }
+
+    S all_prod() const{
+        return root? root->val: e();
+    }
+
+    S get(ll idx) const{
+        return query(root, L, R, idx, idx+1);
+    }
+
+    template<class G>
+    long long max_right(long long l, G f) const {
+        S sm = e();
+        return max_right(root, L, R, l, f, sm);
+    }
+
+    template<class G>
+    long long min_left(long long r, G f) const {
+        S sm = e();
+        return min_left(root, L, R, r, f, sm);
+    }
+
+    template<class G> long long max_right(Node* node, long long nl, long long nr, long long l, G f, S& sm) const{
+        if (nr <= l) return nr;
+        if (!node){
+            S nxt = op(sm, e());
+            if (!f(nxt)) return l;
+            sm = nxt;
+            return nr;
         }
-        return res;
+        if (nl >= l){
+            S nxt = op(sm, node->val);
+            if (f(nxt)){
+                sm = nxt;
+                return nr;
+            }
+            if (nr - nl == 1) return nl;
+        }
+        long long mid = (nl+nr)>>1;
+        long long res = max_right(node->l, nl, mid, l, f, sm);
+        if (res != mid) return res;
+        return max_right(node->r, mid, nr, l, f, sm);
+    }
+
+    template<class G> long long min_left(Node* node, long long nl, long long nr, long long r, G f, S& sm) const{
+        if (nl >= r) return nl;
+        if (!node){
+            S nxt = op(e(), sm);
+            if (!f(nxt)) return r;
+            sm = nxt;
+            return nl;
+        }
+        if (nr <= r){
+            S nxt = op(node->val, sm);
+            if (f(nxt)){
+                sm = nxt;
+                return nl;
+            }
+            if (nr-nl == 1) return nr;
+        }
+        long long mid = (nl+nr)>>1;
+        long long res = min_left(node->l, nl, mid, r, f, sm);
+        if (res != mid) return res;
+        return min_left(node->r, mid, nr, r, f, sm);
     }
 };
